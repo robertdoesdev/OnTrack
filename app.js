@@ -1,269 +1,302 @@
-const KEYS = {
-  "AX7K2M": "user",
-  "BQ4L9P": "friend1",
-  "CR8N3T": "friend2",
-  "DZ5V6H": "friend3",
-  "EY1J8R": "friend4",
-  "FW3S2L": "friend5",
-  "GH2M7X": "friend6",
-  "JK9P4L": "friend7",
-  "MN6R1Q": "friend8"
-};
+/* =========================================================================
+   ONTRACK — app.js
+   Local-first personal accountability system.
+   Vanilla JS, no build step. Data lives in localStorage under 'ontrack_data'.
+   ========================================================================= */
 
-const COACHING = {
-  "Fatigue": "Coach tip: consider scaling down to an elastic version on low energy days.",
-  "Forgot": "Coach tip: anchor this habit directly to an existing morning routine.",
-  "Busy": "Coach tip: block a 15-minute execution window on your calendar."
-};
-
-const STRUGGLE_PRESETS = {
-  getting_over_ex: {
-    habits: [
-      "Zero contact streak tracking (reset timer on slip-up)",
-      "Archive/delete old media & conversation threads",
-      "Nightly self-worth & progress journaling",
-      "Identify 3 non-negotiable standards for future partners",
-      "Plan 1 daily activity solely for self-fulfillment"
-    ],
-    skills: ["Radical Acceptance", "Emotional Detachment", "Boundary Reinforcement", "Grief Processing"],
-    friction: [
-      "Checking ex's active status / social media updates",
-      "Re-reading old text message archives late at night",
-      "Asking mutual friends about their life",
-      "Stalking their friends' stories for background appearances",
-      "Keeping gifts or physical reminders in plain view"
-    ]
-  },
-  love_and_dating: {
-    habits: [
-      "Weekly relationship standards audit",
-      "Limit dating app usage to 15 minutes daily",
-      "Schedule non-negotiable personal time around dating",
-      "Journal feelings after dates to spot red flags early",
-      "Practice explicit communication regarding intentions"
-    ],
-    skills: ["Boundary Setting", "Discerning Intentions", "Secure Attachment Dynamics", "Emotional Independence"],
-    friction: [
-      "Ignoring clear red flags for fast validation",
-      "Double/triple messaging when feeling anxious",
-      "Prioritizing potential partners over personal goals",
-      "Fixating on text response times",
-      "Over-analyzing tone in basic text messages"
-    ]
-  },
-  peer_pressure_fomo: {
-    habits: [
-      "Daily morning core values alignment check",
-      "Digital detox: no social media apps past 10 PM",
-      "Budget-first decision audit before committing to plans",
-      "Say 'let me check my schedule' before agreeing to invites",
-      "Document weekly financial and personal wins"
-    ],
-    skills: ["Assertive Communication", "Value Alignment", "Financial Discipline", "Selective Availability"],
-    friction: [
-      "Saying 'yes' to expensive plans out of fear of missing out",
-      "Comparing lifestyle/spending habits with online peers",
-      "Buying things you don't need to impress others",
-      "Conforming opinions to fit into group chats",
-      "Apologizing for establishing personal boundaries"
-    ]
-  },
-  social_anxiety: {
-    habits: [
-      "1 micro-exposure daily (initiate 1 brief conversation)",
-      "Maintain a 3-second eye contact target in daily interactions",
-      "Box-breathing routine before entering social settings",
-      "Record positive social interactions in a log",
-      "Practice vocal projection exercises in morning routine"
-    ],
-    skills: ["Active Listening", "Conversational Flow", "Body Language Mastery", "Self-Soothing"],
-    friction: [
-      "Replaying awkward moments over and over in your head",
-      "Canceling plans at the last minute due to overthinking",
-      "Using your phone as a social shield in group settings",
-      "Assuming people are judging your presence or outfit",
-      "Avoiding eye contact while walking in public"
-    ]
-  },
-  anger_and_frustration: {
-    habits: [
-      "10-minute breathwork / decompression right after intense events",
-      "Track daily emotional trigger patterns in a log",
-      "High-intensity physical outlet daily (gym, run, boxing)",
-      "Execute a 10-second rule before responding to conflict",
-      "Write uncensored thoughts on paper, then destroy it"
-    ],
-    skills: ["Emotional Regulation", "Pause Before Response", "De-escalation", "Channeling Energy"],
-    friction: [
-      "Impulsive texting or calling while visibly agitated",
-      "Engaging in heated arguments in online comment sections",
-      "Venting endlessly without seeking solutions",
-      "Taking anger out on objects or physical surroundings",
-      "Holding long-term grudges that consume mental bandwidth"
-    ]
-  },
-  brain_fog_doomscrolling: {
-    habits: [
-      "Cold shower morning reset",
-      "Zero phone usage for the first 45 minutes awake",
-      "Drink 1L of water before consuming caffeine",
-      "Use grayscale mode on phone during work hours",
-      "Single-tasking training: 30-minute block without secondary screens"
-    ],
-    skills: ["Deep Focus Blocks", "Information Dieting", "Dopamine Detoxification", "Attention Control"],
-    friction: [
-      "Doomscrolling short-form content (TikTok/Reels/Shorts) in bed",
-      "Multitasking with video streams in the background while working",
-      "Checking notifications immediately upon waking up",
-      "Leaving 50+ tabs open in your browser simultaneously",
-      "Reaching for your phone every time you experience boredom"
-    ]
-  },
-  procrastination_execution: {
-    habits: [
-      "Apply the 5-minute rule: start a task for 5 minutes only",
-      "Set 3 non-negotiable daily output objectives",
-      "Nightly schedule planning for the next morning",
-      "Use site blockers during scheduled focus windows",
-      "Work in 25-minute uninterrupted focus sprints"
-    ],
-    skills: ["Time-Boxing", "Task Decomposition", "Friction Reduction", "Momentum Building"],
-    friction: [
-      "Opening YouTube/socials during study or work blocks",
-      "Endless organizing/planning without starting execution",
-      "Waiting for 'inspiration' or the 'perfect mood' to start",
-      "Overestimating how much time is left to complete tasks",
-      "Abandoning tasks at the first sign of confusion"
-    ]
-  },
-  burnout_overwhelm: {
-    habits: [
-      "Strict work shutdown at 8 PM daily",
-      "8-hour sleep requirement (no screens in bedroom)",
-      "Unplugged 20-minute daily walk without audio/podcasts",
-      "Weekly priority pruning: drop 2 non-essential tasks",
-      "Daily gratitude log targeting small simple moments"
-    ],
-    skills: ["Energy Management", "Delegation", "Rest Prioritization", "Stress Resilience"],
-    friction: [
-      "Working directly from your bed",
-      "Ignoring physical fatigue signals (migraines, muscle tension)",
-      "Saying yes to extra projects when already overloaded",
-      "Consuming high caffeine late in the day to force productivity",
-      "Feeling guilty whenever taking intentional breaks"
-    ]
-  },
-  life_direction_identity: {
-    habits: [
-      "Weekly 20-minute personal vision & goal alignment audit",
-      "Dedicate 1 hour daily strictly to long-term skill acquisition",
-      "Read 10 pages of self-mastery or industry literature daily",
-      "Track weekly skill developments and real-world wins",
-      "Conduct a monthly review of personal progress"
-    ],
-    skills: ["Long-term Strategy", "Self-Reflection", "Skill Compounding", "Identity Design"],
-    friction: [
-      "Living on autopilot without clear quarterly goals",
-      "Constantly seeking external approval for personal life choices",
-      "Changing career/life directions every few weeks based on trends",
-      "Focusing on short-term entertainment over long-term growth",
-      "Letting fear of failure prevent starting new projects"
-    ]
-  }
-};
-
-let state = {
-  version: 1,
-  activeUserKey: null,
-  stakeSettings: { penalty: 20, thresholdPct: 80 },
-  profiles: {
-    user: { name: "You", onboarded: false, habits: [], skills: [], logs: {}, friction: [], lastSeen: null },
-    friend1: { name: "Friend 1", onboarded: false, habits: [], skills: [], logs: {}, friction: [], lastSeen: null },
-    friend2: { name: "Friend 2", onboarded: false, habits: [], skills: [], logs: {}, friction: [], lastSeen: null },
-    friend3: { name: "Friend 3", onboarded: false, habits: [], skills: [], logs: {}, friction: [], lastSeen: null },
-    friend4: { name: "Friend 4", onboarded: false, habits: [], skills: [], logs: {}, friction: [], lastSeen: null },
-    friend5: { name: "Friend 5", onboarded: false, habits: [], skills: [], logs: {}, friction: [], lastSeen: null },
-    friend6: { name: "Friend 6", onboarded: false, habits: [], skills: [], logs: {}, friction: [], lastSeen: null },
-    friend7: { name: "Friend 7", onboarded: false, habits: [], skills: [], logs: {}, friction: [], lastSeen: null },
-    friend8: { name: "Friend 8", onboarded: false, habits: [], skills: [], logs: {}, friction: [], lastSeen: null },
-  }
-};
-
-let pendingMissCell = null;
-
-// The month/year currently shown in the habit grid. Runtime only —
-// every visit opens on today's month, it isn't saved.
-const today = new Date();
-let viewYear = today.getFullYear();
-let viewMonth = today.getMonth() + 1; // 1-12
+const STORAGE_KEY = 'ontrack_data';
+const SESSION_KEY = 'ontrack_session';
+const LEGACY_DATA_KEY = 'four_keys_data';
+const LEGACY_SESSION_KEY = 'four_keys_session';
+const DEFAULT_GROUP_ID = 'default';
+const ONLINE_THRESHOLD_MS = 2 * 60 * 1000;
 
 const MONTH_NAMES = ["January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"];
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-function daysInMonth(year, month) {
-  return new Date(year, month, 0).getDate();
+const STATUS = { DONE: 'done', ADJUSTED: 'adjusted', MISSED: 'missed' };
+
+/* -------------------------------------------------------------------------
+   ONBOARDING CATALOG
+   Categories + items exactly as specified. `private: true` categories
+   (sexuality & identity) are never surfaced to the Group under any
+   circumstance.
+   ------------------------------------------------------------------------- */
+const ONBOARDING_CATEGORIES = [
+  {
+    id: 'mind_focus', title: 'Mind & Focus',
+    items: ["Procrastination", "Brain fog", "Doomscrolling", "Overthinking", "Short attention span",
+      "Feeling mentally scattered", "Lack of discipline", "Inconsistent routines", "Burnout", "Feeling stuck",
+      "Decision paralysis", "Perfectionism", "Fear of failure", "Fear of wasting time",
+      "Difficulty starting things", "Difficulty finishing things", "Constantly seeking stimulation",
+      "Feeling behind in life"]
+  },
+  {
+    id: 'identity_self', title: 'Identity & Self',
+    items: ["Low self-confidence", "Comparing myself to everyone", "Not knowing who I am", "People-pleasing",
+      "Caring too much about what people think", "Struggling with self-expression",
+      "Feeling like I'm living for other people", "Difficulty setting boundaries", "Becoming whoever I'm around",
+      "Feeling disconnected from myself", "Wanting to reinvent myself", "Finding my personal style",
+      "Building my identity", "Becoming more independent"]
+  },
+  {
+    id: 'dating_relationships', title: 'Dating & Relationships',
+    items: ["Getting over an ex", "Missing someone I shouldn't", "Dating anxiety", "Fear of rejection",
+      "Fear of commitment", "Fear of intimacy", "Getting attached too quickly", "Avoiding emotional intimacy",
+      "Situationships", "Toxic relationship patterns", "Setting relationship boundaries",
+      "Communication problems", "Jealousy", "Trust issues", "Feeling lonely while dating",
+      "Not knowing what I want from relationships", "Choosing unavailable people",
+      "People-pleasing in relationships", "Struggling to let go", "Learning to be alone"]
+  },
+  {
+    id: 'sexuality_identity', title: 'Sexuality & Identity', private: true,
+    note: "You don't need to choose a label. You can change or remove this later.",
+    items: ["Exploring my sexuality", "Questioning my sexuality", "Understanding my attraction",
+      "Understanding romantic vs sexual attraction", "Figuring out what I'm comfortable with",
+      "Setting sexual boundaries", "Communicating boundaries", "Navigating dating while figuring myself out",
+      "Feeling confused about labels", "Feeling pressure to choose a label",
+      "Feeling different from people around me", "Dealing with shame or stigma", "Understanding consent",
+      "Learning about healthy sexual relationships", "Balancing sexuality with my personal values",
+      "Feeling confident expressing my boundaries"]
+  },
+  {
+    id: 'social_life', title: 'Social Life',
+    items: ["Social anxiety", "Making new friends", "Maintaining friendships", "Feeling like the third wheel",
+      "Feeling left out", "Fear of being judged", "Fear of embarrassment", "Struggling to start conversations",
+      "Struggling to keep conversations going", "Finding my people", "Feeling lonely in a crowd",
+      "Feeling like nobody really knows me", "People-pleasing", "Setting boundaries with friends",
+      "Losing friends", "Outgrowing friendships", "Becoming more socially confident"]
+  },
+  {
+    id: 'digital_life', title: 'Digital Life',
+    items: ["Doomscrolling", "Phone addiction", "Social media comparison", "Constantly checking notifications",
+      "FOMO", "Internet rabbit holes", "Porn consumption", "Excessive gaming", "Staying up scrolling",
+      "Seeking validation online", "Obsessing over likes/views", "Comparing my life to people online",
+      "Difficulty being offline", "Digital distractions while studying/working"]
+  },
+  {
+    id: 'money_independence', title: 'Money & Independence',
+    items: ["Bad spending habits", "Impulse buying", "Saving money", "Budgeting", "Financial anxiety",
+      "Not knowing where my money goes", "Depending too much on others", "Wanting financial independence",
+      "Finding ways to earn", "Fear of financial instability", "Balancing enjoyment and saving"]
+  },
+  {
+    id: 'school_career', title: 'School & Career',
+    items: ["Academic procrastination", "Exam anxiety", "Falling behind", "Poor time management",
+      "Can't focus while studying", "Study consistency", "Feeling academically average",
+      "Pressure from family", "Choosing a career", "Feeling lost about my future",
+      "Fear of graduating without a plan", "Building useful skills", "Finding internships",
+      "Building a portfolio", "Feeling behind my peers", "Not knowing what I'm good at"]
+  },
+  {
+    id: 'lifestyle', title: 'Lifestyle',
+    items: ["Poor sleep", "Irregular sleep schedule", "Lack of exercise", "Inconsistent eating", "Low energy",
+      "Spending too much time indoors", "Poor daily routine", "Hygiene consistency",
+      "Taking better care of myself", "Building healthier routines", "Wanting more energy",
+      "Difficulty maintaining routines"]
+  },
+  {
+    id: 'emotional_regulation', title: 'Emotional Regulation',
+    items: ["Anger", "Irritability", "Emotional outbursts", "Holding things in", "Getting triggered easily",
+      "Difficulty communicating when upset", "Taking things personally", "Emotional impulsivity",
+      "Difficulty calming down", "Avoiding difficult conversations"]
+  },
+  {
+    id: 'purpose_life', title: 'Purpose & Life',
+    items: ["Feeling directionless", "Feeling behind", "Not knowing what I want", "Lack of motivation",
+      "Feeling like I'm wasting my potential", "Fear of wasting my 20s", "Wanting to become more disciplined",
+      "Building a meaningful life", "Finding things I actually care about", "Becoming independent",
+      "Figuring out what success means to me", "Creating a vision for my life"]
+  }
+];
+
+const FRICTION_BLOCKERS = [
+  "I forget", "I lose motivation", "I get distracted", "I overthink",
+  "I don't have enough time", "I get overwhelmed", "I avoid uncomfortable things",
+  "I start strong and fade", "I don't know where to start", "My environment makes it difficult"
+];
+
+/* -------------------------------------------------------------------------
+   CATEGORY PRESET LIBRARY
+   Each category can seed: habits, skills, watchFor ("things to watch for" —
+   NOT real friction history), and frictionPatterns (used only to inform
+   intervention copy, never written as real friction records).
+   ------------------------------------------------------------------------- */
+const CATEGORY_PRESETS = {
+  mind_focus: {
+    habits: ["Start the most avoided task for 10 minutes", "Work in one 25-minute focus sprint",
+      "Nightly plan for tomorrow's top 3 tasks", "Zero phone for the first 20 minutes awake"],
+    skills: ["Task initiation", "Sustained focus"],
+    watchFor: ["Waiting until you \"feel ready\" to start", "Reorganizing/planning instead of starting",
+      "Reaching for your phone the moment a task gets hard"],
+    frictionPatterns: ["Poor planning", "Distraction", "Avoidance"]
+  },
+  identity_self: {
+    habits: ["Write one honest journal entry about what you want", "Say no to one thing that isn't you",
+      "Spend 15 minutes on something purely for yourself"],
+    skills: ["Self-expression", "Boundary setting"],
+    watchFor: ["Agreeing with the last person who spoke", "Deciding based on what others will think"],
+    frictionPatterns: ["Overthinking", "Avoidance"]
+  },
+  dating_relationships: {
+    habits: ["Journal your feelings after any date or interaction", "Practice stating one boundary clearly",
+      "Limit dating-app usage to a set window", "Do one thing today solely for your own fulfillment"],
+    skills: ["Boundary setting", "Discerning intentions"],
+    watchFor: ["Ignoring a clear red flag for quick validation", "Checking an ex's activity or old messages",
+      "Fixating on response times"],
+    frictionPatterns: ["Overthinking", "No motivation"]
+  },
+  sexuality_identity: {
+    habits: ["Write privately about what felt true today", "Name one boundary you want to hold this week"],
+    skills: ["Self-understanding", "Communicating boundaries"],
+    watchFor: ["Pressuring yourself to have an answer right away", "Comparing your timeline to someone else's"],
+    frictionPatterns: ["Overthinking", "Avoidance"]
+  },
+  social_life: {
+    habits: ["Initiate one short conversation today", "Hold eye contact for a few seconds in one interaction",
+      "Message one friend you haven't spoken to in a while"],
+    skills: ["Conversation initiation", "Active listening"],
+    watchFor: ["Using your phone as a social shield", "Replaying an interaction on a loop afterward"],
+    frictionPatterns: ["Distraction", "I avoid uncomfortable things"]
+  },
+  digital_life: {
+    habits: ["No phone in the first 20 minutes of the day", "Use grayscale mode during work/study hours",
+      "One screen-free hour before bed"],
+    skills: ["Attention control", "Digital boundaries"],
+    watchFor: ["Checking notifications the instant you wake up", "Opening an app out of boredom, not intent"],
+    frictionPatterns: ["Distraction", "I forget"]
+  },
+  money_independence: {
+    habits: ["Log every purchase for the day", "Wait 24 hours before a non-essential purchase",
+      "Review spending once a week"],
+    skills: ["Budgeting", "Delayed gratification"],
+    watchFor: ["Buying something to match what others have", "Avoiding looking at your balance"],
+    frictionPatterns: ["Avoidance", "Poor planning"]
+  },
+  school_career: {
+    habits: ["Study in one uninterrupted 25-minute block", "Spend 15 minutes on your portfolio or resume",
+      "Write tomorrow's top study priority tonight"],
+    skills: ["Time management", "Deep work"],
+    watchFor: ["Opening social apps mid-study session", "Waiting for motivation instead of starting"],
+    frictionPatterns: ["Distraction", "Poor planning"]
+  },
+  lifestyle: {
+    habits: ["Lights out by a consistent time", "20-minute walk outside", "Drink water before your first coffee"],
+    skills: ["Routine building", "Energy management"],
+    watchFor: ["Staying up scrolling past your bedtime target", "Skipping meals when busy"],
+    frictionPatterns: ["Fatigue", "Poor planning"]
+  },
+  emotional_regulation: {
+    habits: ["10-minute decompression after a stressful event", "Note today's emotional trigger in one line",
+      "Pause 10 seconds before responding when upset"],
+    skills: ["Emotional regulation", "De-escalation"],
+    watchFor: ["Responding immediately while still activated", "Holding a grudge instead of naming it"],
+    frictionPatterns: ["Overthinking", "I get overwhelmed"]
+  },
+  purpose_life: {
+    habits: ["Spend 20 minutes on a long-term goal", "Weekly review of what mattered this week",
+      "Read 10 pages toward something you care about"],
+    skills: ["Self-reflection", "Long-term thinking"],
+    watchFor: ["Chasing short-term distraction over long-term goals", "Letting fear of failure stall a start"],
+    frictionPatterns: ["No motivation", "I don't know where to start"]
+  }
+};
+
+const FRICTION_REASONS = ["Fatigue", "Forgot", "Busy", "No motivation", "Distraction", "Too difficult",
+  "Poor planning", "Unexpected event", "Environment", "Overthinking", "Avoidance", "Other"];
+
+const INTERVENTIONS = {
+  "Fatigue": "Consider moving this habit to a higher-energy part of your day.",
+  "Forgot": "Try attaching it to an existing routine, or setting a reminder.",
+  "Busy": "Create a smaller version that fits into a 10\u201315 minute window.",
+  "No motivation": "Lower the bar for today \u2014 a token version still counts as adjusted.",
+  "Distraction": "Remove the most immediate source of distraction before starting.",
+  "Too difficult": "Break it into a smaller first step you can't say no to.",
+  "Poor planning": "Decide the exact time and place the night before.",
+  "Unexpected event": "Build a little slack into your week for the unplannable.",
+  "Environment": "Change your surroundings so the habit is the easy option.",
+  "Overthinking": "Set a 2-minute timer and start before you're ready.",
+  "Avoidance": "Name what you're avoiding, then do the smallest piece of it.",
+  "Other": "Log what happened \u2014 patterns often show up after a few entries."
+};
+
+/* -------------------------------------------------------------------------
+   STATE SHAPE
+   users[userId] = {
+     id, name, avatar, createdAt, lastSeen, onboarded, groupId,
+     habits: [{id,name,description,category,frequency:{type,days},createdAt,active,reminder}],
+     completions: { "habitId__YYYY-MM-DD": "done"|"adjusted"|"missed" },
+     skills: [{id,name,description,progress,hours,relatedProblem,evidence:[{id,date,text}]}],
+     friction: [{id,habitId,habitNameSnapshot,date,reason,note}],
+     watchFor: [string],
+     onboardingSelections: { problems, priorities, impact, blockers } -- PRIVATE, never shown to group,
+     activityLog: [{id,habitId,habitName,date,at}] -- for group activity feed,
+     weeklyReviews: [{weekKey,reflection,createdAt,snapshot}],
+     settings: { appearance, notifications:{...}, privacy:{...} }
+   }
+   groups[groupId] = { id, name, createdAt, members:[userId] }
+   ------------------------------------------------------------------------- */
+function defaultState() {
+  return {
+    version: 2,
+    session: { activeUserId: null },
+    users: {},
+    groups: {
+      [DEFAULT_GROUP_ID]: { id: DEFAULT_GROUP_ID, name: 'OnTrack', createdAt: Date.now(), members: [] }
+    }
+  };
 }
 
+let state = defaultState();
+let pendingMissCell = null;
+let onboard = { step: 1, problems: [], priorities: [], impact: {}, blockers: [] };
+let currentTab = 'today';
+
+const today = new Date();
+let viewYear = today.getFullYear();
+let viewMonth = today.getMonth() + 1;
+
+/* ---------- ID generation ---------- */
+function genId(prefix) {
+  return `${prefix}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/* ---------- Date helpers ---------- */
 function pad2(n) { return String(n).padStart(2, '0'); }
-
-function dateKey(year, month, day) {
-  return `${year}-${pad2(month)}-${pad2(day)}`;
+function dateKey(year, month, day) { return `${year}-${pad2(month)}-${pad2(day)}`; }
+function daysInMonth(year, month) { return new Date(year, month, 0).getDate(); }
+function todayKey() { const d = new Date(); return dateKey(d.getFullYear(), d.getMonth() + 1, d.getDate()); }
+function parseDateKey(s) { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); }
+function addDays(d, n) { const nd = new Date(d); nd.setDate(nd.getDate() + n); return nd; }
+function isoWeekKey(d) {
+  const dt = new Date(d);
+  dt.setHours(0, 0, 0, 0);
+  dt.setDate(dt.getDate() + 3 - ((dt.getDay() + 6) % 7));
+  const week1 = new Date(dt.getFullYear(), 0, 4);
+  const weekNo = 1 + Math.round(((dt - week1) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7);
+  return `${dt.getFullYear()}-W${pad2(weekNo)}`;
 }
 
-function logKey(hIdx, year, month, day) {
-  return `${hIdx}-${dateKey(year, month, day)}`;
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
-// Older saves used plain "hIdx-day" keys with no month/year at all.
-// Fold any of those into the month the app happened to be opened in
-// so nothing gets silently dropped.
-function migrateLegacyLogs(profile) {
-  const migratedLogs = {};
-  let touched = false;
-  Object.keys(profile.logs || {}).forEach(key => {
-    const parts = key.split('-');
-    if (parts.length === 2) {
-      const [hIdx, day] = parts;
-      migratedLogs[logKey(hIdx, viewYear, viewMonth, day)] = profile.logs[key];
-      touched = true;
-    } else {
-      migratedLogs[key] = profile.logs[key];
-    }
-  });
-  if (touched) profile.logs = migratedLogs;
+function slugify(str) {
+  return String(str).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
 }
 
-function init() {
-  try {
-    const saved = localStorage.getItem('four_keys_data');
-    if (saved) {
-      const loadedState = JSON.parse(saved);
-      if (loadedState && loadedState.profiles) {
-        state = { ...state, ...loadedState, profiles: { ...state.profiles, ...loadedState.profiles } };
-      }
-    }
-  } catch (err) {
-    console.error('Saved data was unreadable, starting fresh.', err);
-  }
-
-  Object.values(state.profiles).forEach(migrateLegacyLogs);
-
-  setupEventListeners();
-  setupCrossTabSync();
-
-  try {
-    const sessionKey = localStorage.getItem('four_keys_session');
-    if (sessionKey && KEYS[sessionKey]) {
-      verifyAndLogin(sessionKey);
-    }
-  } catch (err) {
-    console.error('Could not restore session.', err);
-  }
-}
-
+/* =========================================================================
+   PERSISTENCE + MIGRATION
+   ========================================================================= */
 function saveData() {
   try {
-    localStorage.setItem('four_keys_data', JSON.stringify(state));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     return true;
   } catch (err) {
     console.error('Could not save data.', err);
@@ -271,130 +304,364 @@ function saveData() {
   }
 }
 
-function handleAuth() {
-  const inputEl = document.getElementById('passkey-input');
-  const val = inputEl ? inputEl.value.trim().toUpperCase() : '';
-
-  if (KEYS[val]) {
-    document.getElementById('auth-error').classList.add('hidden');
-    verifyAndLogin(val);
-  } else {
-    document.getElementById('auth-error').classList.remove('hidden');
-  }
-}
-
-function verifyAndLogin(key) {
-  const userKey = KEYS[key];
-  state.activeUserKey = userKey;
-
-  if (!state.profiles[userKey]) {
-    state.profiles[userKey] = {
-      name: `User (${key})`,
-      onboarded: false,
-      habits: [],
-      skills: [],
-      logs: {},
-      friction: [],
-      lastSeen: null
-    };
-  }
-
-  if (state.profiles[userKey].onboarded === undefined || state.profiles[userKey].onboarded === null) {
-    state.profiles[userKey].onboarded = false;
-  }
-
-  state.profiles[userKey].lastSeen = Date.now();
-
+function loadData() {
   try {
-    localStorage.setItem('four_keys_session', key);
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed && parsed.users && parsed.groups) {
+        state = parsed;
+        ensureDefaultGroup();
+        return true;
+      }
+    }
   } catch (err) {
-    console.error('Could not persist session.', err);
+    console.error('Saved data was unreadable, starting fresh.', err);
   }
-  saveData();
-  startPresenceHeartbeat();
-  showApp();
+  return false;
 }
 
-function logout() {
-  touchLastSeen();
-  stopPresenceHeartbeat();
+function ensureDefaultGroup() {
+  if (!state.groups) state.groups = {};
+  if (!state.groups[DEFAULT_GROUP_ID]) {
+    state.groups[DEFAULT_GROUP_ID] = { id: DEFAULT_GROUP_ID, name: 'OnTrack', createdAt: Date.now(), members: [] };
+  }
+}
+
+function newUserShell(name) {
+  return {
+    id: genId('user'),
+    name: name || 'You',
+    avatar: null,
+    createdAt: Date.now(),
+    lastSeen: null,
+    onboarded: false,
+    groupId: DEFAULT_GROUP_ID,
+    habits: [],
+    completions: {},
+    skills: [],
+    friction: [],
+    watchFor: [],
+    onboardingSelections: null,
+    activityLog: [],
+    weeklyReviews: [],
+    settings: {
+      appearance: 'system',
+      notifications: { habitReminders: true, dailyCheckin: true, weeklyReview: true, groupActivity: false },
+      privacy: { groupVisibility: true, activityVisibility: true, profileVisibility: true }
+    }
+  };
+}
+
+/* Legacy schema (v1): a single 'four_keys_data' key with hardcoded
+   friend1..friend8 profiles, index-based habit logs, and a stake system.
+   We migrate what we reasonably can:
+     - the profile behind the last active session key becomes a real user
+     - other never-onboarded demo friend slots are dropped (they were never
+       real people — fake Friend 1..8 placeholders are explicitly forbidden
+       in the new model)
+     - any friend slot that WAS onboarded (i.e. actually used) is preserved
+       as its own real user so no real history is silently discarded
+     - index-based logs are remapped onto newly-generated stable habit IDs
+     - stake data is discarded entirely (feature removed) */
+function migrateLegacyIfPresent() {
+  let legacyRaw;
   try {
-    localStorage.removeItem('four_keys_session');
+    legacyRaw = localStorage.getItem(LEGACY_DATA_KEY);
   } catch (err) {
-    console.error('Could not clear session.', err);
+    return false;
   }
-  location.reload();
+  if (!legacyRaw) return false;
+
+  let legacy;
+  try {
+    legacy = JSON.parse(legacyRaw);
+  } catch (err) {
+    console.error('Legacy OnTrack data was unreadable; skipping migration.', err);
+    return false;
+  }
+  if (!legacy || !legacy.profiles) return false;
+
+  let lastSessionKey = null;
+  try { lastSessionKey = localStorage.getItem(LEGACY_SESSION_KEY); } catch (err) { /* ignore */ }
+
+  let migratedAny = false;
+  let firstMigratedUserId = null;
+
+  Object.keys(legacy.profiles).forEach(pKey => {
+    const oldProfile = legacy.profiles[pKey];
+    if (!oldProfile) return;
+    // Skip demo friend slots that were never actually used.
+    if (/^friend\d+$/.test(pKey) && !oldProfile.onboarded) return;
+    if (!oldProfile.onboarded && !(oldProfile.habits && oldProfile.habits.length)) return;
+
+    const user = newUserShell(oldProfile.name || 'Migrated profile');
+    user.avatar = oldProfile.avatar || null;
+    user.onboarded = !!oldProfile.onboarded;
+    user.lastSeen = oldProfile.lastSeen || null;
+
+    // Old habits were plain strings at fixed array indexes. Give each a
+    // stable ID and keep a map from old index -> new ID for log remapping.
+    const idxToId = {};
+    (oldProfile.habits || []).forEach((habitName, idx) => {
+      const h = {
+        id: genId('habit'),
+        name: habitName,
+        description: '',
+        category: '',
+        frequency: { type: 'daily' },
+        createdAt: Date.now(),
+        active: true,
+        reminder: null
+      };
+      user.habits.push(h);
+      idxToId[idx] = h.id;
+    });
+
+    // Old logs: "hIdx-YYYY-MM-DD" -> '✓' | '~' | '✕'
+    const statusMap = { '✓': STATUS.DONE, '~': STATUS.ADJUSTED, '✕': STATUS.MISSED };
+    Object.keys(oldProfile.logs || {}).forEach(key => {
+      const parts = key.split('-');
+      if (parts.length !== 4) return; // drop unrecognized/very old formats safely
+      const [hIdxStr, y, m, d] = parts;
+      const habitId = idxToId[Number(hIdxStr)];
+      if (!habitId) return;
+      const status = statusMap[oldProfile.logs[key]];
+      if (!status) return;
+      user.completions[`${habitId}__${dateKey(Number(y), Number(m), Number(d))}`] = status;
+    });
+
+    (oldProfile.skills || []).forEach(s => {
+      user.skills.push({
+        id: genId('skill'), name: s.name || 'Skill', description: '',
+        progress: s.progress || 0, hours: s.hours || 0, relatedProblem: '', evidence: []
+      });
+    });
+
+    // Old "friction" mixed real misses with seeded watch-for strings
+    // (seed:true). Only real misses become friction history.
+    (oldProfile.friction || []).forEach(f => {
+      if (f && f.seed) {
+        if (f.reason) user.watchFor.push(f.reason);
+        return;
+      }
+      if (!f || !f.date) return;
+      const habitId = f.habit ? (user.habits.find(h => h.name === f.habit) || {}).id : null;
+      user.friction.push({
+        id: genId('fric'), habitId: habitId || null, habitNameSnapshot: f.habit || '',
+        date: f.date, reason: f.reason || 'Other', note: ''
+      });
+    });
+
+    state.users[user.id] = user;
+    state.groups[DEFAULT_GROUP_ID].members.push(user.id);
+    migratedAny = true;
+
+    if (pKey === lastSessionKey || (!firstMigratedUserId && user.onboarded)) {
+      firstMigratedUserId = user.id;
+    }
+  });
+
+  if (migratedAny) {
+    state.session.activeUserId = firstMigratedUserId || Object.values(state.users)[0].id;
+    saveData();
+    try {
+      localStorage.removeItem(LEGACY_DATA_KEY);
+      localStorage.removeItem(LEGACY_SESSION_KEY);
+    } catch (err) { /* non-fatal */ }
+  }
+  return migratedAny;
 }
 
-/* Presence: "last seen" / "online" tracking.
-   IMPORTANT: this only reflects activity recorded in THIS browser's
-   localStorage. If everyone uses their own device, each device only
-   ever knows its own user's presence — "online" for a friend will
-   look stale or "Never" until their data is imported here. Real
-   cross-device presence needs a small backend; see the note in chat. */
-const ONLINE_THRESHOLD_MS = 2 * 60 * 1000; // 2 minutes
-let presenceInterval = null;
+function getUser() {
+  return state.users[state.session.activeUserId] || null;
+}
+
+function getGroup(user) {
+  const gid = (user && user.groupId) || DEFAULT_GROUP_ID;
+  return state.groups[gid] || state.groups[DEFAULT_GROUP_ID];
+}
 
 function touchLastSeen() {
-  if (!state.activeUserKey) return;
-  const profile = state.profiles[state.activeUserKey];
-  if (!profile) return;
-  profile.lastSeen = Date.now();
+  const u = getUser();
+  if (!u) return;
+  u.lastSeen = Date.now();
   saveData();
 }
 
-function startPresenceHeartbeat() {
-  stopPresenceHeartbeat();
-  presenceInterval = setInterval(() => {
-    touchLastSeen();
-    const groupTab = document.getElementById('tab-group');
-    if (groupTab && !groupTab.classList.contains('hidden')) renderGroup();
-  }, 30000);
-
-  document.addEventListener('visibilitychange', handleVisibilityChange);
-  window.addEventListener('beforeunload', touchLastSeen);
-}
-
-/* Cross-tab live sync.
-   The 'storage' event fires in every OTHER same-origin tab/window the
-   instant one tab writes to localStorage — it never fires in the tab
-   that made the write. That gives genuinely instant online/offline
-   and data updates, but only between tabs of the SAME browser on the
-   SAME device (e.g. two people sharing one computer, or you testing
-   with two tabs open). It cannot see other people's separate phones —
-   there's no channel between two different browsers at all without a
-   backend in between. */
-function setupCrossTabSync() {
-  window.addEventListener('storage', (e) => {
-    if (e.key !== 'four_keys_data' || !e.newValue) return;
-    try {
-      const incoming = JSON.parse(e.newValue);
-      if (incoming && incoming.profiles) {
-        state.profiles = { ...state.profiles, ...incoming.profiles };
-      }
-      if (incoming && incoming.stakeSettings) {
-        state.stakeSettings = incoming.stakeSettings;
-      }
-    } catch (err) {
-      console.error('Could not read update from another tab.', err);
-      return;
-    }
-    updateStakeDisplays();
-    refreshGroupIfVisible();
-  });
-}
-
-function stopPresenceHeartbeat() {
-  if (presenceInterval) {
-    clearInterval(presenceInterval);
-    presenceInterval = null;
+/* =========================================================================
+   HABIT DUE / CONSISTENCY / STREAK — single source of truth.
+   Today, Progress, Group, and Habit Detail all call these same functions
+   so the numbers never disagree with each other.
+   ========================================================================= */
+function isHabitDue(habit, date) {
+  if (!habit.frequency || habit.frequency.type === 'daily') return true;
+  if (habit.frequency.type === 'weekly') {
+    const days = habit.frequency.days || [];
+    return days.length === 0 ? true : days.includes(date.getDay());
   }
-  document.removeEventListener('visibilitychange', handleVisibilityChange);
-  window.removeEventListener('beforeunload', touchLastSeen);
+  return true;
 }
 
-function handleVisibilityChange() {
-  if (!document.hidden) touchLastSeen();
+function getCompletion(user, habitId, dStr) {
+  return user.completions[`${habitId}__${dStr}`] || null;
+}
+
+function setCompletion(user, habitId, dStr, status) {
+  const key = `${habitId}__${dStr}`;
+  if (status) user.completions[key] = status;
+  else delete user.completions[key];
+}
+
+// Iterates the due dates for a single habit between its creation date and
+// `to` (default: today), never counting future dates.
+function habitDueDatesInRange(habit, to) {
+  const dates = [];
+  const start = new Date(habit.createdAt);
+  start.setHours(0, 0, 0, 0);
+  const end = to ? new Date(to) : new Date();
+  end.setHours(0, 0, 0, 0);
+  if (end < start) return dates;
+  let cursor = new Date(start);
+  let guard = 0;
+  while (cursor <= end && guard < 3660) {
+    if (isHabitDue(habit, cursor)) dates.push(new Date(cursor));
+    cursor = addDays(cursor, 1);
+    guard++;
+  }
+  return dates;
+}
+
+// Central consistency calculator.
+// opts: { habitId?: string, from?: Date, to?: Date }
+// Returns null when there's not enough data yet (no expected opportunities).
+function calcConsistency(user, opts) {
+  opts = opts || {};
+  const habits = opts.habitId
+    ? [user.habits.find(h => h.id === opts.habitId)].filter(Boolean)
+    : user.habits.filter(h => h.active !== false);
+
+  let expected = 0, done = 0, adjusted = 0, missed = 0;
+  habits.forEach(habit => {
+    let dueDates = habitDueDatesInRange(habit, opts.to);
+    if (opts.from) {
+      const fromTime = new Date(opts.from).setHours(0, 0, 0, 0);
+      dueDates = dueDates.filter(d => d.getTime() >= fromTime);
+    }
+    dueDates.forEach(d => {
+      const dStr = dateKey(d.getFullYear(), d.getMonth() + 1, d.getDate());
+      const status = getCompletion(user, habit.id, dStr);
+      // Only count a day as an "opportunity" once it has actually arrived
+      // (today counts) so future due-dates never drag consistency down.
+      expected++;
+      if (status === STATUS.DONE) done++;
+      else if (status === STATUS.ADJUSTED) adjusted++;
+      else if (status === STATUS.MISSED) missed++;
+    });
+  });
+
+  if (expected === 0) return null;
+  const pct = Math.round(((done + adjusted) / expected) * 100);
+  return { pct, expected, done, adjusted, missed };
+}
+
+// Per-habit current streak: walk backward from today; today is forgiven if
+// not yet logged (so you don't lose your streak before you've had a chance
+// to check in). Stops the moment a past due day was missed or left blank.
+function calcCurrentStreak(user, habitId) {
+  const habit = user.habits.find(h => h.id === habitId);
+  if (!habit) return 0;
+  const createdDate = new Date(habit.createdAt);
+  createdDate.setHours(0, 0, 0, 0);
+  let cursor = new Date();
+  cursor.setHours(0, 0, 0, 0);
+  const isToday = (d) => d.getTime() === new Date().setHours(0, 0, 0, 0);
+  let streak = 0;
+  let guard = 0;
+  while (cursor >= createdDate && guard < 3660) {
+    guard++;
+    if (isHabitDue(habit, cursor)) {
+      const dStr = dateKey(cursor.getFullYear(), cursor.getMonth() + 1, cursor.getDate());
+      const status = getCompletion(user, habit.id, dStr);
+      if (status === STATUS.DONE || status === STATUS.ADJUSTED) {
+        streak++;
+      } else if (isToday(cursor) && !status) {
+        // give today the benefit of the doubt, keep walking backward
+      } else {
+        break;
+      }
+    }
+    cursor = addDays(cursor, -1);
+  }
+  return streak;
+}
+
+// Longest streak for a single habit across its full history.
+function calcLongestStreak(user, habitId) {
+  const habit = user.habits.find(h => h.id === habitId);
+  if (!habit) return 0;
+  const dueDates = habitDueDatesInRange(habit, new Date());
+  let longest = 0, run = 0;
+  dueDates.forEach(d => {
+    const dStr = dateKey(d.getFullYear(), d.getMonth() + 1, d.getDate());
+    const status = getCompletion(user, habit.id, dStr);
+    if (status === STATUS.DONE || status === STATUS.ADJUSTED) {
+      run++;
+      longest = Math.max(longest, run);
+    } else {
+      run = 0;
+    }
+  });
+  return longest;
+}
+
+// Overall (all-habits) streak: a calendar day counts as "clean" if every
+// habit due that day was completed (done/adjusted) and none were missed.
+// A day with zero due habits doesn't break or extend the streak.
+function overallCleanDaySet(user) {
+  if (user.habits.length === 0) return new Set();
+  const earliest = user.habits.reduce((min, h) => Math.min(min, h.createdAt), Date.now());
+  const start = new Date(earliest);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date();
+  end.setHours(0, 0, 0, 0);
+  const clean = new Set();
+  let cursor = new Date(start);
+  let guard = 0;
+  while (cursor <= end && guard < 3660) {
+    guard++;
+    const dStr = dateKey(cursor.getFullYear(), cursor.getMonth() + 1, cursor.getDate());
+    const dueHabits = user.habits.filter(h => new Date(h.createdAt).setHours(0, 0, 0, 0) <= cursor.getTime() && isHabitDue(h, cursor));
+    if (dueHabits.length > 0) {
+      const allGood = dueHabits.every(h => {
+        const s = getCompletion(user, h.id, dStr);
+        return s === STATUS.DONE || s === STATUS.ADJUSTED;
+      });
+      if (allGood) clean.add(dStr);
+    }
+    cursor = addDays(cursor, 1);
+  }
+  return clean;
+}
+
+function calcOverallStreaks(user) {
+  const cleanDates = overallCleanDaySet(user);
+  if (cleanDates.size === 0) return { current: 0, longest: 0 };
+  const sorted = [...cleanDates].sort();
+  let longest = 1, run = 1;
+  for (let i = 1; i < sorted.length; i++) {
+    const gap = Math.round((parseDateKey(sorted[i]) - parseDateKey(sorted[i - 1])) / 86400000);
+    run = gap === 1 ? run + 1 : 1;
+    longest = Math.max(longest, run);
+  }
+  let current = 0;
+  let cursor = new Date();
+  cursor.setHours(0, 0, 0, 0);
+  while (true) {
+    const key = dateKey(cursor.getFullYear(), cursor.getMonth() + 1, cursor.getDate());
+    if (cleanDates.has(key)) { current++; cursor = addDays(cursor, -1); } else break;
+  }
+  return { current, longest };
 }
 
 function isOnline(lastSeen) {
@@ -415,99 +682,593 @@ function formatLastSeen(lastSeen) {
   return `${MONTH_NAMES[d.getMonth()].slice(0, 3)} ${d.getDate()}`;
 }
 
-function showApp() {
-  const authScreen = document.getElementById('auth-screen');
-  if (authScreen) {
-    authScreen.classList.add('hidden');
-    authScreen.style.display = 'none';
+/* =========================================================================
+   INIT / SESSION / ACCESS SCREEN (profile picker)
+   No fake backend, no fake cross-device auth. This is a local device
+   profile picker: whoever is using this browser chooses or creates their
+   profile. Real backend auth can slot in later behind getUser()/saveData().
+   ========================================================================= */
+function init() {
+  loadData();
+  migrateLegacyIfPresent();
+  ensureDefaultGroup();
+  setupEventListeners();
+  setupCrossTabSync();
+  applyAppearance();
+
+  let sessionUserId = null;
+  try { sessionUserId = localStorage.getItem(SESSION_KEY); } catch (err) { /* ignore */ }
+
+  if (sessionUserId && state.users[sessionUserId]) {
+    state.session.activeUserId = sessionUserId;
+    afterLogin();
+  } else if (state.session.activeUserId && state.users[state.session.activeUserId]) {
+    afterLogin();
+  } else {
+    renderAccessScreen();
   }
-
-  const curProfile = state.profiles[state.activeUserKey];
-  const appScreen = document.getElementById('app-screen');
-  const onboardScreen = document.getElementById('onboarding-screen');
-
-  if (!curProfile || !curProfile.onboarded) {
-    if (appScreen) { appScreen.classList.add('hidden'); appScreen.style.display = 'none'; }
-    if (onboardScreen) { onboardScreen.classList.remove('hidden'); onboardScreen.style.display = 'flex'; }
-    return;
-  }
-
-  if (onboardScreen) { onboardScreen.classList.add('hidden'); onboardScreen.style.display = 'none'; }
-  if (appScreen) { appScreen.classList.remove('hidden'); appScreen.style.display = 'block'; }
-
-  const nameLabel = document.getElementById('active-user-name');
-  const nameInput = document.getElementById('display-name-input');
-  if (nameLabel) nameLabel.innerText = curProfile.name;
-  if (nameInput) nameInput.value = curProfile.name;
-  refreshAvatarDisplays();
-
-  renderAll();
 }
 
-/* Onboarding */
-function submitOnboarding() {
-  const checked = Array.from(document.querySelectorAll('.struggle-cb:checked')).map(cb => cb.value);
-  completeOnboarding(checked);
-}
-
-function completeOnboarding(selectedStruggles = []) {
-  const curProfile = state.profiles[state.activeUserKey];
-  if (!curProfile) return;
-
-  curProfile.habits = [];
-  curProfile.skills = [];
-  curProfile.friction = [];
-
-  if (selectedStruggles.length === 0) {
-    selectedStruggles = ['procrastination_execution', 'brain_fog_doomscrolling'];
-  }
-
-  selectedStruggles.forEach(key => {
-    const preset = STRUGGLE_PRESETS[key];
-    if (preset) {
-      curProfile.habits.push(...preset.habits);
-      curProfile.skills.push(...preset.skills);
-      curProfile.friction.push(...preset.friction.map(reason => ({ habit: null, day: null, reason, seed: true })));
-    }
-  });
-
-  curProfile.habits = [...new Set(curProfile.habits)];
-  curProfile.skills = [...new Set(curProfile.skills)].map(name => ({ name, hours: 0, progress: 0 }));
-  // Friction from presets is "things to watch for," not real missed days — keep habits/skills seeded,
-  // but leave the friction log itself empty until a real miss happens.
-  curProfile.friction = [];
-
-  curProfile.onboarded = true;
+function afterLogin() {
+  const u = getUser();
+  if (!u) { renderAccessScreen(); return; }
+  u.lastSeen = Date.now();
+  try { localStorage.setItem(SESSION_KEY, u.id); } catch (err) { /* ignore */ }
   saveData();
+  startPresenceHeartbeat();
   showApp();
 }
 
-function switchTab(tab, clickedBtn) {
-  ['habits', 'skills', 'progress', 'group', 'friction', 'settings'].forEach(t => {
-    const el = document.getElementById(`tab-${t}`);
-    if (el) el.classList.add('hidden');
+function renderAccessScreen() {
+  document.getElementById('app-screen').classList.add('hidden');
+  document.getElementById('onboarding-screen').classList.add('hidden');
+  const accessScreen = document.getElementById('access-screen');
+  accessScreen.classList.remove('hidden');
+  accessScreen.style.display = 'flex';
+
+  const users = Object.values(state.users).sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
+  const card = document.getElementById('access-card');
+
+  if (users.length === 0) {
+    renderCreateProfileForm(card, true);
+    return;
+  }
+
+  card.innerHTML = `
+    <p class="eyebrow">OnTrack</p>
+    <h1 class="auth-title">Who's this?</h1>
+    <p class="auth-sub">Choose a profile on this device, or create a new one.</p>
+    <div class="profile-picker-list">
+      ${users.map(u => `
+        <button type="button" class="profile-pick-btn" data-uid="${u.id}">
+          <span class="avatar avatar-md">${avatarMarkup(u)}</span>
+          <span class="profile-pick-name">${escapeHtml(u.name)}</span>
+        </button>
+      `).join('')}
+    </div>
+    <button type="button" class="btn-primary mt-14" id="new-profile-btn">+ New profile</button>
+  `;
+  card.querySelectorAll('.profile-pick-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.session.activeUserId = btn.dataset.uid;
+      afterLogin();
+    });
+  });
+  const newBtn = document.getElementById('new-profile-btn');
+  if (newBtn) newBtn.addEventListener('click', () => renderCreateProfileForm(card, false));
+}
+
+function renderCreateProfileForm(card, isFirstEver) {
+  card.innerHTML = `
+    <p class="eyebrow">${isFirstEver ? 'Welcome' : 'New profile'}</p>
+    <h1 class="auth-title">${isFirstEver ? 'Set up OnTrack' : 'Create a profile'}</h1>
+    <p class="auth-sub">${isFirstEver
+      ? 'OnTrack lives only in this browser. Give this profile a name to get started.'
+      : 'Everyone using this browser gets their own private profile in the same group.'}</p>
+    <input type="text" id="new-profile-name" class="input-field" style="text-align:left;letter-spacing:normal;" placeholder="Your name" autocomplete="off">
+    <button id="create-profile-btn" type="button" class="btn-primary">Continue</button>
+    <p id="profile-error" class="error-msg hidden">Enter a name to continue.</p>
+    ${!isFirstEver ? '<button type="button" class="btn-secondary full-width mt-10" id="back-to-picker-btn">Back</button>' : ''}
+  `;
+  const submit = () => {
+    const val = document.getElementById('new-profile-name').value.trim();
+    if (!val) { document.getElementById('profile-error').classList.remove('hidden'); return; }
+    createProfile(val);
+  };
+  document.getElementById('create-profile-btn').addEventListener('click', submit);
+  document.getElementById('new-profile-name').addEventListener('keyup', (e) => { if (e.key === 'Enter') submit(); });
+  const backBtn = document.getElementById('back-to-picker-btn');
+  if (backBtn) backBtn.addEventListener('click', renderAccessScreen);
+}
+
+function createProfile(name) {
+  const user = newUserShell(name);
+  state.users[user.id] = user;
+  ensureDefaultGroup();
+  if (!state.groups[DEFAULT_GROUP_ID].members.includes(user.id)) {
+    state.groups[DEFAULT_GROUP_ID].members.push(user.id);
+  }
+  state.session.activeUserId = user.id;
+  saveData();
+  afterLogin();
+}
+
+function switchProfile() {
+  touchLastSeen();
+  stopPresenceHeartbeat();
+  try { localStorage.removeItem(SESSION_KEY); } catch (err) { /* ignore */ }
+  state.session.activeUserId = null;
+  document.getElementById('app-screen').classList.add('hidden');
+  renderAccessScreen();
+}
+
+/* ---------- Presence + cross-tab sync (same-browser only) ---------- */
+let presenceInterval = null;
+function startPresenceHeartbeat() {
+  stopPresenceHeartbeat();
+  presenceInterval = setInterval(() => {
+    touchLastSeen();
+    if (currentTab === 'group') renderGroup();
+  }, 30000);
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  window.addEventListener('beforeunload', touchLastSeen);
+}
+function stopPresenceHeartbeat() {
+  if (presenceInterval) { clearInterval(presenceInterval); presenceInterval = null; }
+  document.removeEventListener('visibilitychange', handleVisibilityChange);
+  window.removeEventListener('beforeunload', touchLastSeen);
+}
+function handleVisibilityChange() { if (!document.hidden) touchLastSeen(); }
+
+function setupCrossTabSync() {
+  window.addEventListener('storage', (e) => {
+    if (e.key !== STORAGE_KEY || !e.newValue) return;
+    try {
+      const incoming = JSON.parse(e.newValue);
+      if (incoming && incoming.users) state = incoming;
+    } catch (err) {
+      console.error('Could not read update from another tab.', err);
+      return;
+    }
+    if (currentTab === 'group') renderGroup();
+    if (currentTab === 'today') renderToday();
+  });
+}
+
+/* ---------- Appearance ---------- */
+function applyAppearance() {
+  const u = getUser();
+  const pref = u ? u.settings.appearance : 'system';
+  let effective = pref;
+  if (pref === 'system') {
+    effective = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+  }
+  document.documentElement.setAttribute('data-theme', effective);
+}
+
+/* =========================================================================
+   ONBOARDING WIZARD
+   Step 1: pick problems across categories.
+   Step 2: narrow to top 3-5 priorities.
+   Step 3: rate how much each priority affects them (Low/Med/High).
+   Step 4: what usually gets in the way (feeds the friction system).
+   Step 5: generated system summary.
+   ========================================================================= */
+function startOnboarding() {
+  onboard = { step: 1, problems: [], priorities: [], impact: {}, blockers: [] };
+  document.getElementById('app-screen').classList.add('hidden');
+  document.getElementById('access-screen').classList.add('hidden');
+  const screen = document.getElementById('onboarding-screen');
+  screen.classList.remove('hidden');
+  screen.style.display = 'flex';
+  renderOnboardStep();
+}
+
+function onboardProgressDots() {
+  let dots = '<div class="onboard-progress">';
+  for (let i = 1; i <= 5; i++) dots += `<span class="onboard-dot ${i <= onboard.step ? 'active' : ''}"></span>`;
+  return dots + '</div>';
+}
+
+function renderOnboardStep() {
+  const card = document.getElementById('onboarding-card');
+  if (onboard.step === 1) renderOnboardStep1(card);
+  else if (onboard.step === 2) renderOnboardStep2(card);
+  else if (onboard.step === 3) renderOnboardStep3(card);
+  else if (onboard.step === 4) renderOnboardStep4(card);
+  else renderOnboardStep5(card);
+}
+
+function problemKey(catId, label) { return `${catId}::${label}`; }
+
+function renderOnboardStep1(card) {
+  card.innerHTML = `
+    ${onboardProgressDots()}
+    <p class="eyebrow">First-time setup</p>
+    <h2>What are you working on?</h2>
+    <p class="onboard-sub">Pick whatever feels relevant right now. You can change this later.</p>
+    <div class="onboard-categories" id="onboard-categories">
+      ${ONBOARDING_CATEGORIES.map(cat => `
+        <div class="onboard-category ${cat.private ? 'is-private' : ''}" data-cat="${cat.id}">
+          <button type="button" class="onboard-category-head" data-cat="${cat.id}">
+            <span>${escapeHtml(cat.title)}${cat.private ? ' <span class="private-badge">Private</span>' : ''}</span>
+            <span class="onboard-category-count" id="count-${cat.id}"></span>
+          </button>
+          ${cat.private ? `<p class="hint-text onboard-private-note">${escapeHtml(cat.note)} This category is never shown to your Group.</p>` : ''}
+          <div class="onboard-items hidden" id="items-${cat.id}">
+            ${cat.items.map(item => `
+              <label class="onboard-item"><input type="checkbox" data-cat="${cat.id}" value="${escapeHtml(item)}"> ${escapeHtml(item)}</label>
+            `).join('')}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+    <button type="button" class="btn-primary mt-14" id="onboard-next-1" disabled>Continue</button>
+  `;
+
+  card.querySelectorAll('.onboard-category-head').forEach(head => {
+    head.addEventListener('click', () => {
+      const el = document.getElementById(`items-${head.dataset.cat}`);
+      el.classList.toggle('hidden');
+    });
+  });
+  card.querySelectorAll('.onboard-items input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const key = problemKey(cb.dataset.cat, cb.value);
+      if (cb.checked) {
+        if (!onboard.problems.find(p => p.key === key)) {
+          onboard.problems.push({ key, catId: cb.dataset.cat, label: cb.value });
+        }
+      } else {
+        onboard.problems = onboard.problems.filter(p => p.key !== key);
+      }
+      updateOnboardCounts();
+      document.getElementById('onboard-next-1').disabled = onboard.problems.length === 0;
+    });
+  });
+  document.getElementById('onboard-next-1').addEventListener('click', () => { onboard.step = 2; renderOnboardStep(); });
+}
+
+function updateOnboardCounts() {
+  ONBOARDING_CATEGORIES.forEach(cat => {
+    const n = onboard.problems.filter(p => p.catId === cat.id).length;
+    const el = document.getElementById(`count-${cat.id}`);
+    if (el) el.textContent = n > 0 ? String(n) : '';
+  });
+}
+
+function renderOnboardStep2(card) {
+  const MAX = 5;
+  card.innerHTML = `
+    ${onboardProgressDots()}
+    <p class="eyebrow">Step 2</p>
+    <h2>What matters most right now?</h2>
+    <p class="onboard-sub">Choose 3&ndash;5 priorities from what you picked. This keeps your system focused instead of overwhelming.</p>
+    <div class="onboard-items" id="priority-items">
+      ${onboard.problems.map(p => `
+        <label class="onboard-item"><input type="checkbox" value="${escapeHtml(p.key)}" ${onboard.priorities.includes(p.key) ? 'checked' : ''}> ${escapeHtml(p.label)}</label>
+      `).join('')}
+    </div>
+    <p class="hint-text" id="priority-count-note"></p>
+    <div class="flex-gap-8 mt-14">
+      <button type="button" class="btn-secondary" id="onboard-back-2">Back</button>
+      <button type="button" class="btn-primary" id="onboard-next-2" disabled>Continue</button>
+    </div>
+  `;
+  const updateNote = () => {
+    const n = onboard.priorities.length;
+    document.getElementById('priority-count-note').textContent = `${n} selected (pick ${MAX - n > 0 ? 'up to ' + (MAX - n) + ' more' : 'no more \u2014 limit reached'})`;
+    document.getElementById('onboard-next-2').disabled = n < 3;
+  };
+  card.querySelectorAll('#priority-items input').forEach(cb => {
+    cb.addEventListener('change', () => {
+      if (cb.checked) {
+        if (onboard.priorities.length >= MAX) { cb.checked = false; return; }
+        onboard.priorities.push(cb.value);
+      } else {
+        onboard.priorities = onboard.priorities.filter(k => k !== cb.value);
+      }
+      updateNote();
+    });
+  });
+  updateNote();
+  document.getElementById('onboard-back-2').addEventListener('click', () => { onboard.step = 1; renderOnboardStep(); });
+  document.getElementById('onboard-next-2').addEventListener('click', () => { onboard.step = 3; renderOnboardStep(); });
+}
+
+function renderOnboardStep3(card) {
+  card.innerHTML = `
+    ${onboardProgressDots()}
+    <p class="eyebrow">Step 3</p>
+    <h2>How much is this affecting you right now?</h2>
+    <p class="onboard-sub">Rate each priority.</p>
+    <div class="onboard-impact-list">
+      ${onboard.priorities.map(key => {
+        const p = onboard.problems.find(pp => pp.key === key);
+        return `
+        <div class="impact-row">
+          <span class="impact-label">${escapeHtml(p ? p.label : key)}</span>
+          <div class="segmented impact-segmented" data-key="${escapeHtml(key)}">
+            <button type="button" class="segmented-btn" data-value="Low">Low</button>
+            <button type="button" class="segmented-btn" data-value="Medium">Medium</button>
+            <button type="button" class="segmented-btn" data-value="High">High</button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="flex-gap-8 mt-14">
+      <button type="button" class="btn-secondary" id="onboard-back-3">Back</button>
+      <button type="button" class="btn-primary" id="onboard-next-3">Continue</button>
+    </div>
+  `;
+  card.querySelectorAll('.impact-segmented').forEach(seg => {
+    const key = seg.dataset.key;
+    seg.querySelectorAll('.segmented-btn').forEach(btn => {
+      if (onboard.impact[key] === btn.dataset.value) btn.classList.add('active');
+      btn.addEventListener('click', () => {
+        onboard.impact[key] = btn.dataset.value;
+        seg.querySelectorAll('.segmented-btn').forEach(b => b.classList.toggle('active', b === btn));
+      });
+    });
+  });
+  document.getElementById('onboard-back-3').addEventListener('click', () => { onboard.step = 2; renderOnboardStep(); });
+  document.getElementById('onboard-next-3').addEventListener('click', () => { onboard.step = 4; renderOnboardStep(); });
+}
+
+function renderOnboardStep4(card) {
+  card.innerHTML = `
+    ${onboardProgressDots()}
+    <p class="eyebrow">Step 4</p>
+    <h2>What usually gets in your way?</h2>
+    <p class="onboard-sub">Pick whatever tends to happen. This feeds your friction system.</p>
+    <div class="onboard-items">
+      ${FRICTION_BLOCKERS.map(b => `
+        <label class="onboard-item"><input type="checkbox" value="${escapeHtml(b)}" ${onboard.blockers.includes(b) ? 'checked' : ''}> ${escapeHtml(b)}</label>
+      `).join('')}
+    </div>
+    <div class="flex-gap-8 mt-14">
+      <button type="button" class="btn-secondary" id="onboard-back-4">Back</button>
+      <button type="button" class="btn-primary" id="onboard-next-4">Generate my system</button>
+    </div>
+  `;
+  card.querySelectorAll('.onboard-items input').forEach(cb => {
+    cb.addEventListener('change', () => {
+      if (cb.checked) onboard.blockers.push(cb.value);
+      else onboard.blockers = onboard.blockers.filter(b => b !== cb.value);
+    });
+  });
+  document.getElementById('onboard-back-4').addEventListener('click', () => { onboard.step = 3; renderOnboardStep(); });
+  document.getElementById('onboard-next-4').addEventListener('click', () => {
+    onboard.step = 5;
+    generateSystemFromOnboarding();
+    renderOnboardStep();
+  });
+}
+
+function renderOnboardStep5(card) {
+  const u = getUser();
+  card.innerHTML = `
+    ${onboardProgressDots()}
+    <p class="eyebrow">Ready</p>
+    <h2>Your starting system is ready.</h2>
+    <p class="onboard-sub">Based on what you picked, OnTrack generated a focused set of habits, skills, and things to watch for. Edit or remove anything &mdash; this is just a starting point.</p>
+    <div class="onboard-summary">
+      <div class="onboard-summary-block">
+        <p class="input-label">Habits</p>
+        <ul>${u.habits.map(h => `<li>${escapeHtml(h.name)}</li>`).join('')}</ul>
+      </div>
+      <div class="onboard-summary-block">
+        <p class="input-label">Skills</p>
+        <ul>${u.skills.map(s => `<li>${escapeHtml(s.name)}</li>`).join('')}</ul>
+      </div>
+      <div class="onboard-summary-block">
+        <p class="input-label">Things to watch for</p>
+        <ul>${u.watchFor.map(w => `<li>${escapeHtml(w)}</li>`).join('')}</ul>
+      </div>
+    </div>
+    <button type="button" class="btn-primary mt-14" id="onboard-finish">Go to Today</button>
+  `;
+  document.getElementById('onboard-finish').addEventListener('click', () => {
+    document.getElementById('onboarding-screen').classList.add('hidden');
+    showApp();
+  });
+}
+
+// Priorities determine which categories seed content (capped so the user
+// doesn't get "homework"): up to 2 habits + 1 skill + up to 2 watch-fors
+// per touched category, overall habit count capped at 8.
+function generateSystemFromOnboarding() {
+  const u = getUser();
+  if (!u) return;
+
+  u.habits = [];
+  u.skills = [];
+  u.watchFor = [];
+  u.friction = [];
+
+  const touchedCategories = [...new Set(onboard.priorities.map(k => k.split('::')[0]))];
+  const seenHabitNames = new Set();
+  const seenSkillNames = new Set();
+
+  touchedCategories.forEach(catId => {
+    const preset = CATEGORY_PRESETS[catId];
+    if (!preset) return;
+    preset.habits.slice(0, 2).forEach(name => {
+      if (u.habits.length >= 8 || seenHabitNames.has(name)) return;
+      seenHabitNames.add(name);
+      u.habits.push({
+        id: genId('habit'), name, description: '', category: catId,
+        frequency: { type: 'daily' }, createdAt: Date.now(), active: true, reminder: null
+      });
+    });
+    preset.skills.slice(0, 1).forEach(name => {
+      if (seenSkillNames.has(name)) return;
+      seenSkillNames.add(name);
+      u.skills.push({ id: genId('skill'), name, description: '', progress: 0, hours: 0, relatedProblem: catId, evidence: [] });
+    });
+    preset.watchFor.slice(0, 2).forEach(w => { if (!u.watchFor.includes(w)) u.watchFor.push(w); });
   });
 
-  const targetTab = document.getElementById(`tab-${tab}`);
-  if (targetTab) targetTab.classList.remove('hidden');
+  u.onboardingSelections = {
+    problems: onboard.problems.map(p => p.key),
+    priorities: onboard.priorities,
+    impact: onboard.impact,
+    blockers: onboard.blockers,
+    completedAt: Date.now()
+  };
 
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  if (clickedBtn) clickedBtn.classList.add('active');
+  u.onboarded = true;
+  saveData();
+}
 
+/* =========================================================================
+   APP SHELL / TAB SWITCHING
+   ========================================================================= */
+function showApp() {
+  const u = getUser();
+  document.getElementById('access-screen').classList.add('hidden');
+  const onboardScreen = document.getElementById('onboarding-screen');
+
+  if (!u) { renderAccessScreen(); return; }
+  if (!u.onboarded) {
+    startOnboarding();
+    return;
+  }
+  onboardScreen.classList.add('hidden');
+  onboardScreen.style.display = 'none';
+  const appScreen = document.getElementById('app-screen');
+  appScreen.classList.remove('hidden');
+  appScreen.style.display = 'block';
+
+  document.getElementById('active-user-name').innerText = u.name;
+  applyAppearance();
+  refreshAvatarDisplays();
+  switchTab('today');
+}
+
+const ALL_TABS = ['today', 'habits', 'skills', 'progress', 'friction', 'group', 'settings'];
+
+function switchTab(tab, clickedBtn) {
+  currentTab = tab;
+  ALL_TABS.forEach(t => {
+    const el = document.getElementById(`tab-${t}`);
+    if (el) el.classList.toggle('hidden', t !== tab);
+  });
+
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.mnav-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+
+  if (tab === 'today') renderToday();
+  if (tab === 'habits') renderHabits();
+  if (tab === 'skills') renderSkills();
   if (tab === 'progress') renderProgress();
+  if (tab === 'friction') renderFriction();
   if (tab === 'group') renderGroup();
   if (tab === 'settings') populateSettingsForm();
 }
 
-/* Month navigation */
+/* =========================================================================
+   TODAY DASHBOARD
+   ========================================================================= */
+function renderToday() {
+  const u = getUser();
+  const container = document.getElementById('today-container');
+  if (!u || !container) return;
+
+  const now = new Date();
+  const hour = now.getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const firstName = (u.name || '').split(' ')[0] || u.name;
+  const dStr = todayKey();
+
+  if (u.habits.length === 0) {
+    container.innerHTML = `
+      <div class="panel today-empty-panel">
+        <p class="eyebrow">${escapeHtml(MONTH_NAMES[now.getMonth()])} ${now.getDate()}</p>
+        <h2 class="today-greeting">${greeting}, ${escapeHtml(firstName)}.</h2>
+        <p class="empty-note mt-10">No habits yet.</p>
+        <button type="button" class="btn-primary today-cta" id="today-add-habit-cta">Build your first one</button>
+      </div>`;
+    document.getElementById('today-add-habit-cta').addEventListener('click', () => switchTab('habits', document.querySelector('.nav-btn[data-tab="habits"]')));
+    return;
+  }
+
+  const dueToday = u.habits.filter(h => h.active !== false && isHabitDue(h, now));
+  const doneCount = dueToday.filter(h => {
+    const s = getCompletion(u, h.id, dStr);
+    return s === STATUS.DONE || s === STATUS.ADJUSTED;
+  }).length;
+  const pct = dueToday.length > 0 ? Math.round((doneCount / dueToday.length) * 100) : 0;
+  const { current } = calcOverallStreaks(u);
+
+  const friction = frictionAnalytics(u, 7);
+  const topFriction = friction.top;
+
+  container.innerHTML = `
+    <div class="panel today-header-panel">
+      <p class="eyebrow">${escapeHtml(MONTH_NAMES[now.getMonth()])} ${now.getDate()}, ${now.getFullYear()}</p>
+      <h2 class="today-greeting">${greeting}, ${escapeHtml(firstName)}.</h2>
+      <div class="today-progress-row">
+        <span class="today-progress-fraction">${doneCount} / ${dueToday.length} complete</span>
+        <div class="progress-bar-bg today-progress-bar"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+        <span class="today-progress-pct">${pct}%</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Today's habits</div>
+      <div id="today-habit-list" class="today-habit-list">
+        ${dueToday.map(h => {
+          const s = getCompletion(u, h.id, dStr);
+          const mark = s === STATUS.DONE ? '\u2713' : s === STATUS.ADJUSTED ? '~' : s === STATUS.MISSED ? '\u2715' : '\u25CB';
+          const cls = s === STATUS.DONE ? 'status-done' : s === STATUS.ADJUSTED ? 'status-adjusted' : s === STATUS.MISSED ? 'status-missed' : '';
+          return `<div class="today-habit-row">
+            <button type="button" class="today-habit-toggle ${cls}" data-habit="${h.id}">${mark}</button>
+            <span class="today-habit-name">${escapeHtml(h.name)}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="today-stat-cards">
+      <div class="panel today-stat-card">
+        <span class="stat-value">${current}</span>
+        <span class="stat-label">Current streak (days)</span>
+      </div>
+      <div class="panel today-stat-card">
+        <span class="stat-value">${topFriction ? topFriction.reason : '\u2014'}</span>
+        <span class="stat-label">Most common friction this week</span>
+        ${topFriction ? `<button type="button" class="btn-secondary today-mini-link" id="today-view-friction">View friction</button>` : ''}
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Quick actions</div>
+      <div class="today-quick-actions">
+        <button type="button" class="btn-secondary" data-tab="habits" id="qa-add-habit">Add habit</button>
+        <button type="button" class="btn-secondary" data-tab="friction" id="qa-log-friction">Log friction</button>
+        <button type="button" class="btn-secondary" data-tab="progress" id="qa-view-progress">View progress</button>
+        <button type="button" class="btn-secondary" data-tab="skills" id="qa-view-skills">View skills</button>
+      </div>
+    </div>
+  `;
+
+  container.querySelectorAll('.today-habit-toggle').forEach(btn => {
+    btn.addEventListener('click', () => cycleCompletion(btn.dataset.habit, dStr, true));
+  });
+  container.querySelectorAll('[data-tab]').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab, document.querySelector(`.nav-btn[data-tab="${btn.dataset.tab}"]`)));
+  });
+  const viewFrictionBtn = document.getElementById('today-view-friction');
+  if (viewFrictionBtn) viewFrictionBtn.addEventListener('click', () => switchTab('friction', document.querySelector('.nav-btn[data-tab="friction"]')));
+}
+
+/* =========================================================================
+   HABITS — monthly grid (preserved UX) + CRUD + detail modal
+   ========================================================================= */
 function renderMonthLabel() {
   const label = document.getElementById('month-label');
   if (label) label.innerText = `${MONTH_NAMES[viewMonth - 1]} ${viewYear}`;
-}
-
-function refreshGroupIfVisible() {
-  const groupTab = document.getElementById('tab-group');
-  if (groupTab && !groupTab.classList.contains('hidden')) renderGroup();
 }
 
 function changeMonth(delta) {
@@ -515,7 +1276,6 @@ function changeMonth(delta) {
   if (viewMonth > 12) { viewMonth = 1; viewYear += 1; }
   if (viewMonth < 1) { viewMonth = 12; viewYear -= 1; }
   renderHabits();
-  refreshGroupIfVisible();
 }
 
 function jumpToToday() {
@@ -523,15 +1283,13 @@ function jumpToToday() {
   viewYear = now.getFullYear();
   viewMonth = now.getMonth() + 1;
   renderHabits();
-  refreshGroupIfVisible();
 }
 
-/* Habit Grid */
 function renderHabits() {
-  const profile = state.profiles[state.activeUserKey];
+  const u = getUser();
   const header = document.getElementById('grid-header');
   const body = document.getElementById('grid-body');
-  if (!profile || !header || !body) return;
+  if (!u || !header || !body) return;
 
   renderMonthLabel();
 
@@ -547,162 +1305,157 @@ function renderHabits() {
   }
 
   body.innerHTML = '';
-  if (profile.habits.length === 0) {
+  if (u.habits.length === 0) {
     body.innerHTML = `<tr><td class="sticky-col empty-note" colspan="${total + 1}">No habits yet &mdash; add one below.</td></tr>`;
     return;
   }
 
-  profile.habits.forEach((habit, hIdx) => {
+  u.habits.forEach((habit, hIdx) => {
     const tr = document.createElement('tr');
     const isFirst = hIdx === 0;
-    const isLast = hIdx === profile.habits.length - 1;
+    const isLast = hIdx === u.habits.length - 1;
     tr.innerHTML = `<td class="sticky-col">
       <div class="habit-cell">
-        <span class="habit-name" data-hidx="${hIdx}" title="Click to rename">${escapeHtml(habit)}</span>
+        <span class="habit-name" data-hid="${habit.id}" title="Click for details">${escapeHtml(habit.name)}</span>
         <div class="habit-actions">
-          <button type="button" class="habit-action-btn" data-action="up" data-hidx="${hIdx}" ${isFirst ? 'disabled' : ''} title="Move up">&uarr;</button>
-          <button type="button" class="habit-action-btn" data-action="down" data-hidx="${hIdx}" ${isLast ? 'disabled' : ''} title="Move down">&darr;</button>
-          <button type="button" class="habit-action-btn habit-delete-btn" data-action="delete" data-hidx="${hIdx}" title="Delete habit">&times;</button>
+          <button type="button" class="habit-action-btn" data-action="up" data-hid="${habit.id}" ${isFirst ? 'disabled' : ''} title="Move up">&uarr;</button>
+          <button type="button" class="habit-action-btn" data-action="down" data-hid="${habit.id}" ${isLast ? 'disabled' : ''} title="Move down">&darr;</button>
+          <button type="button" class="habit-action-btn habit-delete-btn" data-action="delete" data-hid="${habit.id}" title="Delete habit">&times;</button>
         </div>
       </div>
     </td>`;
     for (let day = 1; day <= total; day++) {
-      const key = logKey(hIdx, viewYear, viewMonth, day);
-      const val = profile.logs[key] || '';
-      let classCss = '';
-      if (val === '✓') classCss = 'status-done';
-      if (val === '~') classCss = 'status-elastic';
-      if (val === '✕') classCss = 'status-missed';
+      const dStr = dateKey(viewYear, viewMonth, day);
+      const val = getCompletion(u, habit.id, dStr);
+      let mark = '', classCss = '';
+      if (val === STATUS.DONE) { mark = '\u2713'; classCss = 'status-done'; }
+      if (val === STATUS.ADJUSTED) { mark = '~'; classCss = 'status-adjusted'; }
+      if (val === STATUS.MISSED) { mark = '\u2715'; classCss = 'status-missed'; }
       const isToday = isCurrentMonth && day === todayDay;
-
-      tr.innerHTML += `<td class="${isToday ? 'is-today' : ''}"><div class="cell-toggle ${classCss}" data-hidx="${hIdx}" data-day="${day}">${val}</div></td>`;
+      tr.innerHTML += `<td class="${isToday ? 'is-today' : ''}"><div class="cell-toggle ${classCss}" data-hid="${habit.id}" data-date="${dStr}">${mark}</div></td>`;
     }
     body.appendChild(tr);
   });
 }
 
-function toggleHabit(hIdx, day) {
-  const profile = state.profiles[state.activeUserKey];
-  const key = logKey(hIdx, viewYear, viewMonth, day);
-  const curr = profile.logs[key] || '';
+// Cycles a single day's status for a habit: empty -> done -> adjusted -> missed -> empty.
+// Missing triggers the friction modal. `rerenderToday` lets Today's own
+// toggle re-render itself instead of the grid.
+function cycleCompletion(habitId, dStr, rerenderToday) {
+  const u = getUser();
+  const curr = getCompletion(u, habitId, dStr);
+  let next;
+  if (!curr) next = STATUS.DONE;
+  else if (curr === STATUS.DONE) next = STATUS.ADJUSTED;
+  else if (curr === STATUS.ADJUSTED) {
+    next = STATUS.MISSED;
+    pendingMissCell = { habitId, dStr };
+    openFailureModal();
+  } else next = null;
 
-  let next = '';
-  if (curr === '') {
-    next = '✓';
-  } else if (curr === '✓') {
-    next = '~';
-  } else if (curr === '~') {
-    next = '✕';
-    pendingMissCell = { hIdx, year: viewYear, month: viewMonth, day };
-    document.getElementById('failure-modal').classList.remove('hidden');
-  } else {
-    next = '';
-  }
-
-  profile.logs[key] = next;
+  setCompletion(u, habitId, dStr, next);
+  if (next === STATUS.DONE) logActivity(u, habitId, dStr);
   saveData();
-  renderHabits();
+  if (rerenderToday) renderToday(); else renderHabits();
+  if (currentTab === 'today') renderToday();
+}
+
+function logActivity(u, habitId, dStr) {
+  const habit = u.habits.find(h => h.id === habitId);
+  if (!habit) return;
+  u.activityLog = u.activityLog || [];
+  u.activityLog.push({ id: genId('act'), habitId, habitName: habit.name, date: dStr, at: Date.now() });
+  if (u.activityLog.length > 60) u.activityLog = u.activityLog.slice(-60);
+}
+
+function openFailureModal() {
+  const btnWrap = document.getElementById('failure-reason-buttons');
+  btnWrap.innerHTML = FRICTION_REASONS.map(r => `<button class="modal-btn" type="button" data-reason="${escapeHtml(r)}">${escapeHtml(r)}</button>`).join('');
+  btnWrap.querySelectorAll('.modal-btn').forEach(btn => btn.addEventListener('click', () => submitFailureReason(btn.dataset.reason)));
+  document.getElementById('failure-note-input').value = '';
+  document.getElementById('failure-modal').classList.remove('hidden');
 }
 
 function submitFailureReason(reason) {
-  if (pendingMissCell) {
-    const profile = state.profiles[state.activeUserKey];
-    profile.friction.push({
-      habit: profile.habits[pendingMissCell.hIdx],
-      date: dateKey(pendingMissCell.year, pendingMissCell.month, pendingMissCell.day),
-      reason: reason
-    });
-    const advice = document.getElementById('advice-container');
-    advice.innerText = COACHING[reason] || '';
-    advice.classList.remove('hidden');
-    pendingMissCell = null;
-  }
+  if (!pendingMissCell) { document.getElementById('failure-modal').classList.add('hidden'); return; }
+  const u = getUser();
+  const habit = u.habits.find(h => h.id === pendingMissCell.habitId);
+  const note = document.getElementById('failure-note-input').value.trim();
+  u.friction.push({
+    id: genId('fric'), habitId: pendingMissCell.habitId,
+    habitNameSnapshot: habit ? habit.name : '', date: pendingMissCell.dStr,
+    reason, note
+  });
+  pendingMissCell = null;
   document.getElementById('failure-modal').classList.add('hidden');
   saveData();
-  renderFriction();
+  renderHabits();
+  if (currentTab === 'today') renderToday();
+  if (currentTab === 'friction') renderFriction();
 }
 
 function addHabit() {
   const input = document.getElementById('new-habit-input');
   const val = input.value.trim();
-  if (val) {
-    state.profiles[state.activeUserKey].habits.push(val);
-    input.value = '';
-    saveData();
-    renderHabits();
-  }
-}
-
-/* Habit editing: rename, reorder, delete.
-   Logs are keyed by habit index, so reordering/deleting has to remap
-   every log entry that referenced the affected index(es) — otherwise
-   a habit's history would silently jump to a different habit. */
-function swapHabitLogs(profile, idxA, idxB) {
-  const remapped = {};
-  Object.keys(profile.logs).forEach(key => {
-    const parts = key.split('-');
-    let hIdx = Number(parts[0]);
-    if (hIdx === idxA) hIdx = idxB;
-    else if (hIdx === idxB) hIdx = idxA;
-    remapped[[hIdx, ...parts.slice(1)].join('-')] = profile.logs[key];
+  if (!val) return;
+  const u = getUser();
+  u.habits.push({
+    id: genId('habit'), name: val, description: '', category: '',
+    frequency: { type: 'daily' }, createdAt: Date.now(), active: true, reminder: null
   });
-  profile.logs = remapped;
+  input.value = '';
+  saveData();
+  renderHabits();
+  if (currentTab === 'today') renderToday();
 }
 
-function moveHabit(hIdx, direction) {
-  const profile = state.profiles[state.activeUserKey];
-  const newIdx = hIdx + direction;
-  if (newIdx < 0 || newIdx >= profile.habits.length) return;
-  const tmp = profile.habits[hIdx];
-  profile.habits[hIdx] = profile.habits[newIdx];
-  profile.habits[newIdx] = tmp;
-  swapHabitLogs(profile, hIdx, newIdx);
+function moveHabit(habitId, direction) {
+  const u = getUser();
+  const idx = u.habits.findIndex(h => h.id === habitId);
+  const newIdx = idx + direction;
+  if (idx < 0 || newIdx < 0 || newIdx >= u.habits.length) return;
+  const tmp = u.habits[idx];
+  u.habits[idx] = u.habits[newIdx];
+  u.habits[newIdx] = tmp;
   saveData();
   renderHabits();
 }
 
-function deleteHabit(hIdx) {
-  const profile = state.profiles[state.activeUserKey];
-  const name = profile.habits[hIdx];
-  if (!confirm(`Delete "${name}"? This also removes its logged history.`)) return;
-
-  profile.habits.splice(hIdx, 1);
-  const remapped = {};
-  Object.keys(profile.logs).forEach(key => {
-    const parts = key.split('-');
-    const idx = Number(parts[0]);
-    if (idx === hIdx) return; // drop this habit's history
-    const newIdx = idx > hIdx ? idx - 1 : idx;
-    remapped[[newIdx, ...parts.slice(1)].join('-')] = profile.logs[key];
-  });
-  profile.logs = remapped;
+function deleteHabit(habitId) {
+  const u = getUser();
+  const habit = u.habits.find(h => h.id === habitId);
+  if (!habit) return;
+  if (!confirm(`Delete "${habit.name}"? This also removes its logged history.`)) return;
+  u.habits = u.habits.filter(h => h.id !== habitId);
+  Object.keys(u.completions).forEach(key => { if (key.startsWith(habitId + '__')) delete u.completions[key]; });
+  u.friction = u.friction.filter(f => f.habitId !== habitId);
   saveData();
   renderHabits();
+  if (currentTab === 'today') renderToday();
 }
 
-function renameHabit(hIdx, newName) {
+function renameHabit(habitId, newName) {
   const val = newName.trim();
   if (!val) return;
-  state.profiles[state.activeUserKey].habits[hIdx] = val;
+  const u = getUser();
+  const h = u.habits.find(hh => hh.id === habitId);
+  if (h) h.name = val;
   saveData();
 }
 
-function startRenameHabit(hIdx, spanEl) {
-  const profile = state.profiles[state.activeUserKey];
+function startRenameHabit(habitId, spanEl) {
+  const u = getUser();
+  const habit = u.habits.find(h => h.id === habitId);
+  if (!habit) return;
   const input = document.createElement('input');
   input.type = 'text';
   input.className = 'habit-rename-input';
-  input.value = profile.habits[hIdx];
+  input.value = habit.name;
   spanEl.replaceWith(input);
   input.focus();
   input.select();
-
   let cancelled = false;
-  const commit = () => {
-    if (cancelled) return;
-    renameHabit(hIdx, input.value);
-    renderHabits();
-  };
+  const commit = () => { if (cancelled) return; renameHabit(habitId, input.value); renderHabits(); };
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') input.blur();
     if (e.key === 'Escape') { cancelled = true; renderHabits(); }
@@ -710,31 +1463,99 @@ function startRenameHabit(hIdx, spanEl) {
   input.addEventListener('blur', commit);
 }
 
-/* Skills Hub */
+/* ---------- Habit detail modal ---------- */
+function openHabitDetail(habitId) {
+  const u = getUser();
+  const habit = u.habits.find(h => h.id === habitId);
+  if (!habit) return;
+  const cons = calcConsistency(u, { habitId });
+  const current = calcCurrentStreak(u, habitId);
+  const longest = calcLongestStreak(u, habitId);
+  const hFriction = u.friction.filter(f => f.habitId === habitId);
+  const reasonCounts = {};
+  hFriction.forEach(f => { reasonCounts[f.reason] = (reasonCounts[f.reason] || 0) + 1; });
+  const topReasons = Object.entries(reasonCounts).sort((a, b) => b[1] - a[1]).slice(0, 3);
+
+  document.getElementById('habit-detail-body').innerHTML = `
+    <div class="panel-title modal-title-margin">${escapeHtml(habit.name)}</div>
+    <div class="stat-grid mb-8">
+      <div class="stat-box"><span class="stat-value">${cons ? cons.pct + '%' : '\u2014'}</span><span class="stat-label">Consistency</span></div>
+      <div class="stat-box"><span class="stat-value">${current}</span><span class="stat-label">Current streak</span></div>
+      <div class="stat-box"><span class="stat-value">${longest}</span><span class="stat-label">Longest streak</span></div>
+      <div class="stat-box"><span class="stat-value">${cons ? cons.done + cons.adjusted : 0}</span><span class="stat-label">Total completions</span></div>
+      <div class="stat-box"><span class="stat-value">${cons ? cons.missed : 0}</span><span class="stat-label">Missed</span></div>
+      <div class="stat-box"><span class="stat-value">${cons ? cons.adjusted : 0}</span><span class="stat-label">Adjusted</span></div>
+    </div>
+    <p class="input-label mb-8">Common friction</p>
+    ${topReasons.length ? topReasons.map(([r, n]) => `<p class="hint-text">${escapeHtml(r)} &mdash; ${n}x</p>`).join('') : '<p class="empty-note">No friction logged for this habit yet.</p>'}
+    <div class="mt-14">
+      <label class="input-label" for="habit-detail-name">Name</label>
+      <input type="text" id="habit-detail-name" class="inline-input full-width" value="${escapeHtml(habit.name)}">
+      <label class="input-label mt-10" for="habit-detail-desc">Description</label>
+      <input type="text" id="habit-detail-desc" class="inline-input full-width" value="${escapeHtml(habit.description || '')}">
+      <label class="toggle-row mt-10"><input type="checkbox" id="habit-detail-active" ${habit.active !== false ? 'checked' : ''}> Active</label>
+      <div class="flex-gap-8 mt-14">
+        <button type="button" class="btn-secondary" id="habit-detail-save">Save changes</button>
+        <button type="button" class="btn-secondary btn-danger" id="habit-detail-delete">Delete habit</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('habit-detail-save').addEventListener('click', () => {
+    habit.name = document.getElementById('habit-detail-name').value.trim() || habit.name;
+    habit.description = document.getElementById('habit-detail-desc').value.trim();
+    habit.active = document.getElementById('habit-detail-active').checked;
+    saveData();
+    renderHabits();
+    document.getElementById('habit-detail-modal').classList.add('hidden');
+  });
+  document.getElementById('habit-detail-delete').addEventListener('click', () => {
+    deleteHabit(habitId);
+    document.getElementById('habit-detail-modal').classList.add('hidden');
+  });
+  document.getElementById('habit-detail-modal').classList.remove('hidden');
+}
+
+/* =========================================================================
+   SKILLS — things you're getting better at (distinct from habits)
+   ========================================================================= */
+function skillLevelLabel(progress) {
+  if (progress >= 75) return 'Strong';
+  if (progress >= 50) return 'Functional';
+  if (progress >= 25) return 'Developing';
+  return 'Novice';
+}
+
 function renderSkills() {
-  const profile = state.profiles[state.activeUserKey];
+  const u = getUser();
   const container = document.getElementById('skills-container');
-  if (!profile || !container) return;
+  if (!u || !container) return;
   container.innerHTML = '';
 
-  if (profile.skills.length === 0) {
-    container.innerHTML = '<p class="empty-note">No skills added yet.</p>';
+  if (u.skills.length === 0) {
+    container.innerHTML = '<p class="empty-note">No skills yet. Your onboarding can generate some based on what you\'re working on, or add one below.</p>';
     return;
   }
 
-  profile.skills.forEach((skill, sIdx) => {
+  u.skills.forEach(skill => {
     const card = document.createElement('div');
     card.className = 'panel skill-card';
     card.innerHTML = `
       <div class="skill-header">
         <span class="skill-title">${escapeHtml(skill.name)}</span>
-        <button class="btn-secondary skill-remove-btn" type="button" data-sidx="${sIdx}">Remove</button>
+        <button class="btn-secondary skill-remove-btn" type="button" data-sid="${skill.id}">Remove</button>
       </div>
       <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${skill.progress}%"></div></div>
-      <div class="skill-meta">Progress: ${skill.progress}% | Hours: ${skill.hours}</div>
-      <div class="flex-gap-8">
-        <button class="btn-secondary add-hrs-btn" type="button" data-sidx="${sIdx}" data-hrs="0.5">+0.5h</button>
-        <button class="btn-secondary add-hrs-btn" type="button" data-sidx="${sIdx}" data-hrs="1">+1h</button>
+      <div class="skill-meta">${skillLevelLabel(skill.progress)} &middot; ${skill.progress}%</div>
+      <div class="flex-gap-8 mb-8">
+        <button class="btn-secondary add-hrs-btn" type="button" data-sid="${skill.id}" data-hrs="0.5">+0.5h practice</button>
+        <button class="btn-secondary add-hrs-btn" type="button" data-sid="${skill.id}" data-hrs="1">+1h practice</button>
+      </div>
+      <div class="skill-evidence-list">
+        ${(skill.evidence || []).slice().reverse().slice(0, 4).map(ev => `<p class="hint-text">&bull; ${escapeHtml(ev.text)}</p>`).join('')}
+      </div>
+      <div class="inline-form">
+        <input type="text" class="inline-input skill-evidence-input" data-sid="${skill.id}" placeholder="Add evidence of progress\u2026">
+        <button class="btn-secondary skill-evidence-btn" type="button" data-sid="${skill.id}">Add</button>
       </div>
     `;
     container.appendChild(card);
@@ -744,16 +1565,17 @@ function renderSkills() {
 function addSkill() {
   const input = document.getElementById('new-skill-input');
   const val = input.value.trim();
-  if (val) {
-    state.profiles[state.activeUserKey].skills.push({ name: val, hours: 0, progress: 0 });
-    input.value = '';
-    saveData();
-    renderSkills();
-  }
+  if (!val) return;
+  const u = getUser();
+  u.skills.push({ id: genId('skill'), name: val, description: '', progress: 0, hours: 0, relatedProblem: '', evidence: [] });
+  input.value = '';
+  saveData();
+  renderSkills();
 }
 
-function updateHours(sIdx, amt) {
-  const skill = state.profiles[state.activeUserKey].skills[sIdx];
+function updateHours(skillId, amt) {
+  const u = getUser();
+  const skill = u.skills.find(s => s.id === skillId);
   if (!skill) return;
   skill.hours = Math.round((skill.hours + amt) * 100) / 100;
   skill.progress = Math.min(100, Math.round((skill.hours / 20) * 100));
@@ -761,142 +1583,148 @@ function updateHours(sIdx, amt) {
   renderSkills();
 }
 
-function removeSkill(sIdx) {
-  state.profiles[state.activeUserKey].skills.splice(sIdx, 1);
+function removeSkill(skillId) {
+  const u = getUser();
+  u.skills = u.skills.filter(s => s.id !== skillId);
   saveData();
   renderSkills();
 }
 
-/* Group Accountability */
-/* Progress ("how far you've come") */
-
-// Pulls every logged entry for a profile into a flat list of
-// { hIdx, date: 'YYYY-MM-DD', status } records, newest key format only
-// (migrateLegacyLogs already folds old keys into that shape on load).
-function collectLogEntries(profile) {
-  const entries = [];
-  Object.keys(profile.logs).forEach(key => {
-    const val = profile.logs[key];
-    if (!val) return;
-    const parts = key.split('-');
-    if (parts.length !== 4) return;
-    const [hIdx, year, month, day] = parts;
-    entries.push({ hIdx: Number(hIdx), date: `${year}-${month}-${day}`, status: val });
-  });
-  return entries;
+function addSkillEvidence(skillId, text) {
+  const val = text.trim();
+  if (!val) return;
+  const u = getUser();
+  const skill = u.skills.find(s => s.id === skillId);
+  if (!skill) return;
+  skill.evidence = skill.evidence || [];
+  skill.evidence.push({ id: genId('ev'), date: todayKey(), text: val });
+  skill.progress = Math.min(100, skill.progress + 4);
+  saveData();
+  renderSkills();
 }
 
-function computeStreaks(distinctCleanDates) {
-  // distinctCleanDates: Set of 'YYYY-MM-DD' strings where the day had
-  // at least one entry and zero misses.
-  if (distinctCleanDates.size === 0) return { current: 0, longest: 0 };
-
-  const toDate = (s) => {
-    const [y, m, d] = s.split('-').map(Number);
-    return new Date(y, m - 1, d);
-  };
-  const oneDay = 24 * 60 * 60 * 1000;
-
-  const sorted = [...distinctCleanDates].sort();
-  let longest = 1, run = 1;
-  for (let i = 1; i < sorted.length; i++) {
-    const gap = Math.round((toDate(sorted[i]) - toDate(sorted[i - 1])) / oneDay);
-    run = gap === 1 ? run + 1 : 1;
-    if (run > longest) longest = run;
+/* =========================================================================
+   FRICTION — real misses only. Seeded "watch for" items never appear here.
+   ========================================================================= */
+function frictionAnalytics(u, sinceDays) {
+  let entries = u.friction;
+  if (sinceDays) {
+    const cutoff = addDays(new Date(), -sinceDays);
+    entries = entries.filter(f => parseDateKey(f.date) >= cutoff);
   }
-
-  // Current streak: walk back from today while each consecutive
-  // calendar day is in the clean set.
-  let current = 0;
-  const cursor = new Date();
-  cursor.setHours(0, 0, 0, 0);
-  while (true) {
-    const key = dateKey(cursor.getFullYear(), cursor.getMonth() + 1, cursor.getDate());
-    if (distinctCleanDates.has(key)) {
-      current++;
-      cursor.setDate(cursor.getDate() - 1);
-    } else {
-      break;
-    }
-  }
-
-  return { current, longest };
+  const counts = {};
+  entries.forEach(f => { counts[f.reason] = (counts[f.reason] || 0) + 1; });
+  const total = entries.length;
+  const breakdown = Object.entries(counts)
+    .map(([reason, count]) => ({ reason, count, pct: total ? Math.round((count / total) * 100) : 0 }))
+    .sort((a, b) => b.count - a.count);
+  return { total, breakdown, top: breakdown[0] || null, entries };
 }
 
+function renderFriction() {
+  const u = getUser();
+  const analyticsEl = document.getElementById('friction-analytics');
+  const list = document.getElementById('friction-log-list');
+  if (!u || !analyticsEl || !list) return;
+
+  const stats = frictionAnalytics(u, 30);
+
+  if (stats.total === 0) {
+    analyticsEl.innerHTML = '<p class="empty-note">No friction logged yet. When a habit doesn\'t happen, log what got in the way and patterns will show up here.</p>';
+  } else {
+    analyticsEl.innerHTML = `
+      <div class="friction-breakdown">
+        ${stats.breakdown.map(b => `
+          <div class="friction-breakdown-row">
+            <span class="friction-breakdown-label">${escapeHtml(b.reason)}</span>
+            <div class="progress-bar-bg friction-breakdown-bar"><div class="progress-bar-fill" style="width:${b.pct}%"></div></div>
+            <span class="friction-breakdown-pct">${b.pct}%</span>
+          </div>`).join('')}
+      </div>
+      ${stats.top ? `
+        <div class="advice-bar mt-14">
+          <strong>${escapeHtml(stats.top.reason)}</strong> is your most common blocker in the last 30 days (${stats.top.count}x).
+          <br>${escapeHtml(INTERVENTIONS[stats.top.reason] || '')}
+        </div>` : ''}
+    `;
+  }
+
+  if (u.friction.length === 0) {
+    list.innerHTML = '<p class="empty-note">No missed entries logged.</p>';
+    return;
+  }
+  const sorted = [...u.friction].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  list.innerHTML = sorted.slice(0, 30).map(f => `
+    <div class="friction-item">
+      <strong>${escapeHtml(f.habitNameSnapshot || '')}</strong> (${escapeHtml(f.date || '')}): <span class="reason-text">${escapeHtml(f.reason)}</span>
+      ${f.note ? `<div class="hint-text">${escapeHtml(f.note)}</div>` : ''}
+    </div>`).join('');
+}
+
+/* =========================================================================
+   PROGRESS
+   ========================================================================= */
 function renderProgress() {
-  const profile = state.profiles[state.activeUserKey];
+  const u = getUser();
   const summaryEl = document.getElementById('progress-summary');
   const chartEl = document.getElementById('progress-chart');
   const habitsEl = document.getElementById('progress-habits');
-  if (!profile || !summaryEl || !chartEl || !habitsEl) return;
+  if (!u || !summaryEl || !chartEl || !habitsEl) return;
 
-  const entries = collectLogEntries(profile);
-
-  if (entries.length === 0) {
-    summaryEl.innerHTML = '<p class="empty-note">No days logged yet &mdash; mark a few habits on the grid and check back here.</p>';
+  const overall = calcConsistency(u, {});
+  if (!overall) {
+    summaryEl.innerHTML = '<p class="empty-note">Keep checking in. Your progress will appear here.</p>';
     chartEl.innerHTML = '';
     habitsEl.innerHTML = '';
+    renderWeeklyReviewInline();
     return;
   }
 
-  // Overall totals
-  let done = 0, elastic = 0, missed = 0;
-  entries.forEach(e => {
-    if (e.status === '✓') done++;
-    if (e.status === '~') elastic++;
-    if (e.status === '✕') missed++;
-  });
-  const totalMarks = done + elastic + missed;
-  const consistency = totalMarks > 0 ? Math.round(((done + elastic) / totalMarks) * 100) : 0;
-
-  // Per-day rollup, for streaks and the monthly chart
-  const byDay = {}; // date -> { done, elastic, missed }
-  entries.forEach(e => {
-    if (!byDay[e.date]) byDay[e.date] = { done: 0, elastic: 0, missed: 0 };
-    if (e.status === '✓') byDay[e.date].done++;
-    if (e.status === '~') byDay[e.date].elastic++;
-    if (e.status === '✕') byDay[e.date].missed++;
-  });
-
-  const cleanDates = new Set(
-    Object.keys(byDay).filter(d => byDay[d].missed === 0 && (byDay[d].done + byDay[d].elastic) > 0)
-  );
-  const { current, longest } = computeStreaks(cleanDates);
-  const daysTracked = Object.keys(byDay).length;
-  const firstDate = Object.keys(byDay).sort()[0];
+  const { current, longest } = calcOverallStreaks(u);
+  const daysTracked = Object.keys(u.completions).length > 0
+    ? new Set(Object.keys(u.completions).map(k => k.split('__')[1])).size : 0;
 
   summaryEl.innerHTML = `
     <div class="stat-grid">
-      <div class="stat-box"><span class="stat-value">${consistency}%</span><span class="stat-label">Lifetime consistency</span></div>
+      <div class="stat-box"><span class="stat-value">${overall.pct}%</span><span class="stat-label">Lifetime consistency</span></div>
       <div class="stat-box"><span class="stat-value">${current}</span><span class="stat-label">Current streak (days)</span></div>
       <div class="stat-box"><span class="stat-value">${longest}</span><span class="stat-label">Longest streak (days)</span></div>
       <div class="stat-box"><span class="stat-value">${daysTracked}</span><span class="stat-label">Days tracked</span></div>
     </div>
-    <p class="hint-text">Tracking since ${firstDate ? escapeHtml(firstDate) : '\u2014'}. ${done} done, ${elastic} elastic, ${missed} missed overall.</p>
+    <p class="hint-text">${overall.done} done, ${overall.adjusted} adjusted, ${overall.missed} missed overall.</p>
   `;
 
-  // Monthly consistency chart — last 8 months that have data
-  const byMonth = {}; // 'YYYY-MM' -> { done, elastic, missed }
-  entries.forEach(e => {
-    const monthKey = e.date.slice(0, 7);
-    if (!byMonth[monthKey]) byMonth[monthKey] = { done: 0, elastic: 0, missed: 0 };
-    if (e.status === '✓') byMonth[monthKey].done++;
-    if (e.status === '~') byMonth[monthKey].elastic++;
-    if (e.status === '✕') byMonth[monthKey].missed++;
+  // Monthly chart: last 8 months that have any completion data.
+  const byMonth = {};
+  Object.keys(u.completions).forEach(key => {
+    const dStr = key.split('__')[1];
+    const monthKey = dStr.slice(0, 7);
+    if (!byMonth[monthKey]) byMonth[monthKey] = { done: 0, adjusted: 0, missed: 0 };
+    const status = u.completions[key];
+    byMonth[monthKey][status] = (byMonth[monthKey][status] || 0) + 1;
   });
   const monthKeys = Object.keys(byMonth).sort().slice(-8);
-
   if (monthKeys.length === 0) {
     chartEl.innerHTML = '<p class="empty-note">Not enough data yet.</p>';
   } else {
-    chartEl.innerHTML = '<div class="bar-chart">' + monthKeys.map(mk => {
+    chartEl.innerHTML = '<div class="bar-chart">' + monthKeys.map((mk, i) => {
       const m = byMonth[mk];
-      const totalM = m.done + m.elastic + m.missed;
-      const pct = totalM > 0 ? Math.round(((m.done + m.elastic) / totalM) * 100) : 0;
+      const totalM = m.done + m.adjusted + m.missed;
+      const pct = totalM > 0 ? Math.round(((m.done + m.adjusted) / totalM) * 100) : 0;
       const [y, mo] = mk.split('-').map(Number);
       const label = MONTH_NAMES[mo - 1].slice(0, 3);
+      let trendNote = '';
+      if (i > 0) {
+        const prevKey = monthKeys[i - 1];
+        const pm = byMonth[prevKey];
+        const prevTotal = pm.done + pm.adjusted + pm.missed;
+        if (prevTotal > 0) {
+          const prevPct = Math.round(((pm.done + pm.adjusted) / prevTotal) * 100);
+          trendNote = pct - prevPct;
+        }
+      }
       return `
-        <div class="bar-col">
+        <div class="bar-col" title="${totalM} logged days">
           <span class="bar-pct">${pct}%</span>
           <div class="bar-track"><div class="bar-fill" style="height:${pct}%"></div></div>
           <span class="bar-label">${label} '${String(y).slice(2)}</span>
@@ -904,189 +1732,280 @@ function renderProgress() {
     }).join('') + '</div>';
   }
 
-  // Per-habit breakdown
-  if (profile.habits.length === 0) {
+  // Per-habit breakdown using the same central calculator.
+  if (u.habits.length === 0) {
     habitsEl.innerHTML = '<p class="empty-note">No habits yet.</p>';
   } else {
-    habitsEl.innerHTML = profile.habits.map((habit, hIdx) => {
-      const hEntries = entries.filter(e => e.hIdx === hIdx);
-      const hDone = hEntries.filter(e => e.status === '✓').length;
-      const hElastic = hEntries.filter(e => e.status === '~').length;
-      const hMissed = hEntries.filter(e => e.status === '✕').length;
-      const hTotal = hDone + hElastic + hMissed;
-      const hPct = hTotal > 0 ? Math.round(((hDone + hElastic) / hTotal) * 100) : 0;
+    habitsEl.innerHTML = u.habits.map(habit => {
+      const c = calcConsistency(u, { habitId: habit.id });
+      const pct = c ? c.pct : 0;
       return `
         <div class="habit-progress-row">
-          <div class="habit-progress-name">${escapeHtml(habit)}</div>
-          <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${hPct}%"></div></div>
-          <div class="habit-progress-pct">${hTotal > 0 ? hPct + '%' : '&mdash;'}</div>
+          <div class="habit-progress-name">${escapeHtml(habit.name)}</div>
+          <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+          <div class="habit-progress-pct">${c ? pct + '%' : '&mdash;'}</div>
         </div>`;
     }).join('');
   }
+
+  renderWeeklyReviewInline();
 }
 
-function renderGroup() {
-  const tbody = document.getElementById('group-table-body');
-  if (!tbody) return;
-  tbody.innerHTML = '';
+/* =========================================================================
+   WEEKLY REVIEW
+   ========================================================================= */
+function computeWeeklySnapshot(u) {
+  const weekAgo = addDays(new Date(), -6);
+  const entries = Object.keys(u.completions)
+    .map(key => ({ habitId: key.split('__')[0], date: key.split('__')[1], status: u.completions[key] }))
+    .filter(e => parseDateKey(e.date) >= new Date(weekAgo.setHours(0, 0, 0, 0)));
 
-  const monthNote = document.getElementById('group-month-note');
-  if (monthNote) monthNote.innerText = `Showing ${MONTH_NAMES[viewMonth - 1]} ${viewYear} — matches the month picker on the Habits tab.`;
-  updateStakeDisplays();
-
-  const monthKey = `${viewYear}-${pad2(viewMonth)}`;
-
-  Object.keys(state.profiles).forEach(pKey => {
-    const p = state.profiles[pKey];
-    let done = 0, elastic = 0, missed = 0;
-    Object.keys(p.logs).forEach(key => {
-      const parts = key.split('-');
-      if (parts.length !== 4) return;
-      const [, y, m] = parts;
-      if (Number(y) !== viewYear || Number(m) !== viewMonth) return;
-      const v = p.logs[key];
-      if (v === '✓') done++;
-      if (v === '~') elastic++;
-      if (v === '✕') missed++;
-    });
-
-    const total = done + elastic + missed;
-    const rate = total > 0 ? Math.round(((done + elastic) / total) * 100) : 0;
-    const passed = total > 0 && rate >= state.stakeSettings.thresholdPct;
-    const online = isOnline(p.lastSeen);
-
-    const paid = !!(p.stakeHistory && p.stakeHistory[monthKey] && p.stakeHistory[monthKey].paid);
-
-    let stakeCell;
-    if (total === 0) {
-      stakeCell = '<span class="stake-neutral">No data yet</span>';
-    } else if (passed) {
-      stakeCell = '<span class="stake-pass">Passed</span>';
-    } else if (paid) {
-      stakeCell = `<span class="stake-pass">Paid</span> <button type="button" class="btn-secondary stake-toggle-btn" data-pkey="${pKey}" data-monthkey="${monthKey}">Undo</button>`;
-    } else {
-      stakeCell = `<span class="stake-fail">$${state.stakeSettings.penalty} owed</span> <button type="button" class="btn-secondary stake-toggle-btn" data-pkey="${pKey}" data-monthkey="${monthKey}">Mark paid</button>`;
-    }
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="profile-cell"><span class="avatar avatar-sm">${avatarMarkup(p)}</span><span>${escapeHtml(p.name)}</span></td>
-      <td class="status-cell"><span class="status-dot ${online ? 'online' : 'offline'}"></span>${online ? 'Online' : 'Offline'}</td>
-      <td>${formatLastSeen(p.lastSeen)}</td>
-      <td>${total > 0 ? rate + '%' : '\u2014'}</td>
-      <td>${done}</td>
-      <td>${elastic}</td>
-      <td>${missed}</td>
-      <td class="stake-cell">${stakeCell}</td>
-    `;
-    tbody.appendChild(tr);
+  let done = 0, adjusted = 0, missed = 0;
+  const byHabit = {};
+  entries.forEach(e => {
+    if (e.status === STATUS.DONE) done++;
+    if (e.status === STATUS.ADJUSTED) adjusted++;
+    if (e.status === STATUS.MISSED) missed++;
+    if (!byHabit[e.habitId]) byHabit[e.habitId] = { done: 0, adjusted: 0, missed: 0 };
+    byHabit[e.habitId][e.status] = (byHabit[e.habitId][e.status] || 0) + 1;
   });
+  const total = done + adjusted + missed;
+  const consistency = total > 0 ? Math.round(((done + adjusted) / total) * 100) : 0;
+
+  let strongest = null, weakest = null;
+  Object.entries(byHabit).forEach(([hId, c]) => {
+    const t = c.done + c.adjusted + c.missed;
+    if (t === 0) return;
+    const rate = (c.done + c.adjusted) / t;
+    const habit = u.habits.find(h => h.id === hId);
+    if (!habit) return;
+    if (!strongest || rate > strongest.rate) strongest = { name: habit.name, rate };
+    if (!weakest || rate < weakest.rate) weakest = { name: habit.name, rate };
+  });
+
+  const weekFriction = frictionAnalytics(u, 7);
+
+  return { consistency, done, adjusted, missed, strongest, weakest, topFriction: weekFriction.top };
 }
 
-/* Friction Log */
-function renderFriction() {
-  const profile = state.profiles[state.activeUserKey];
-  const list = document.getElementById('friction-log-list');
-  if (!profile || !list) return;
-  list.innerHTML = '';
-
-  if (profile.friction.length === 0) {
-    list.innerHTML = '<p class="empty-note">No missed entries logged.</p>';
+function renderWeeklyReviewInline() {
+  const u = getUser();
+  const el = document.getElementById('weekly-review-inline');
+  if (!u || !el) return;
+  const snap = computeWeeklySnapshot(u);
+  if (snap.done + snap.adjusted + snap.missed === 0) {
+    el.innerHTML = '<p class="empty-note">Not enough data yet this week.</p>';
     return;
   }
+  el.innerHTML = `
+    <div class="stat-grid mb-8">
+      <div class="stat-box"><span class="stat-value">${snap.consistency}%</span><span class="stat-label">This week</span></div>
+      <div class="stat-box"><span class="stat-value">${snap.done + snap.adjusted}</span><span class="stat-label">Completed</span></div>
+      <div class="stat-box"><span class="stat-value">${snap.missed}</span><span class="stat-label">Missed</span></div>
+    </div>
+    <button type="button" class="btn-secondary" id="open-weekly-review-btn">Open full review</button>
+  `;
+  document.getElementById('open-weekly-review-btn').addEventListener('click', openWeeklyReviewModal);
+}
 
-  // Most recent first
-  const sorted = [...profile.friction].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-  sorted.forEach(f => {
-    const item = document.createElement('div');
-    item.className = 'friction-item';
-    item.innerHTML = `<strong>${escapeHtml(f.habit || '')}</strong> (${escapeHtml(f.date || '')}): <span class="reason-text">${escapeHtml(f.reason)}</span>`;
-    list.appendChild(item);
+function openWeeklyReviewModal() {
+  const u = getUser();
+  const snap = computeWeeklySnapshot(u);
+  const weekKey = isoWeekKey(new Date());
+  const existing = (u.weeklyReviews || []).find(r => r.weekKey === weekKey);
+
+  document.getElementById('weekly-review-body').innerHTML = `
+    <div class="panel-title modal-title-margin">Your week</div>
+    <div class="stat-grid mb-8">
+      <div class="stat-box"><span class="stat-value">${snap.consistency}%</span><span class="stat-label">Consistency</span></div>
+      <div class="stat-box"><span class="stat-value">${snap.done + snap.adjusted}</span><span class="stat-label">Completed</span></div>
+      <div class="stat-box"><span class="stat-value">${snap.missed}</span><span class="stat-label">Missed</span></div>
+    </div>
+    <p class="hint-text">Top friction: ${snap.topFriction ? escapeHtml(snap.topFriction.reason) : '\u2014'}</p>
+    <p class="hint-text">Strongest habit: ${snap.strongest ? escapeHtml(snap.strongest.name) : '\u2014'}</p>
+    <p class="hint-text">Needs attention: ${snap.weakest ? escapeHtml(snap.weakest.name) : '\u2014'}</p>
+    <label class="input-label mt-14" for="weekly-reflection-input">What should change next week?</label>
+    <textarea id="weekly-reflection-input" class="inline-input full-width weekly-reflection-textarea">${escapeHtml(existing ? existing.reflection : '')}</textarea>
+    <button type="button" class="btn-secondary mt-10" id="weekly-review-save">Save reflection</button>
+  `;
+  document.getElementById('weekly-review-save').addEventListener('click', () => {
+    const text = document.getElementById('weekly-reflection-input').value.trim();
+    u.weeklyReviews = u.weeklyReviews || [];
+    const idx = u.weeklyReviews.findIndex(r => r.weekKey === weekKey);
+    const record = { weekKey, reflection: text, createdAt: Date.now(), snapshot: snap };
+    if (idx >= 0) u.weeklyReviews[idx] = record; else u.weeklyReviews.push(record);
+    saveData();
+    document.getElementById('weekly-review-modal').classList.add('hidden');
   });
+  document.getElementById('weekly-review-modal').classList.remove('hidden');
+}
+
+/* =========================================================================
+   GROUP — real users only. No Friend 1-8 placeholders, no fake activity,
+   no stake mechanics. Private onboarding data, friction notes, and habit
+   names are never exposed here.
+   ========================================================================= */
+function renderGroup() {
+  const u = getUser();
+  const tbody = document.getElementById('group-table-body');
+  const wrap = document.getElementById('group-table-wrap');
+  const emptyEl = document.getElementById('group-empty');
+  const monthNote = document.getElementById('group-month-note');
+  const activityEl = document.getElementById('group-activity');
+  if (!u || !tbody) return;
+
+  const group = getGroup(u);
+  const memberIds = (group.members || []).filter(id => state.users[id]);
+  const visibleMembers = memberIds
+    .map(id => state.users[id])
+    .filter(m => m.id === u.id || (m.settings.privacy.groupVisibility !== false));
+
+  if (monthNote) monthNote.innerText = visibleMembers.length <= 1
+    ? "Everyone you invite into this browser's OnTrack joins this group automatically."
+    : `${visibleMembers.length} members visible to you.`;
+
+  if (visibleMembers.length <= 1) {
+    wrap.classList.add('hidden');
+    emptyEl.classList.remove('hidden');
+    emptyEl.innerHTML = '<p class="empty-note">You\'re currently the only member. Create another profile on this device (Switch &rarr; New profile) to see group accountability in action.</p>';
+  } else {
+    wrap.classList.remove('hidden');
+    emptyEl.classList.add('hidden');
+    tbody.innerHTML = '';
+    visibleMembers
+      .sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0))
+      .forEach(m => {
+        const cons = calcConsistency(m, {});
+        const streaks = calcOverallStreaks(m);
+        const online = isOnline(m.lastSeen);
+        const showIdentity = m.id === u.id || m.settings.privacy.profileVisibility !== false;
+        const displayName = showIdentity ? escapeHtml(m.name) : 'Member';
+        const avatarHtml = showIdentity ? avatarMarkup(m) : `<span class="avatar-initials">?</span>`;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="profile-cell"><span class="avatar avatar-sm">${avatarHtml}</span><span>${displayName}${m.id === u.id ? ' (you)' : ''}</span></td>
+          <td class="status-cell"><span class="status-dot ${online ? 'online' : 'offline'}"></span>${online ? 'Online' : 'Offline'}</td>
+          <td>${formatLastSeen(m.lastSeen)}</td>
+          <td>${cons ? cons.pct + '%' : '\u2014'}</td>
+          <td>${streaks.current}</td>
+          <td>${cons ? cons.done : 0}</td>
+          <td>${cons ? cons.adjusted : 0}</td>
+          <td>${cons ? cons.missed : 0}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+  }
+
+  // Lightweight activity feed — completions only, never friction/notes/
+  // onboarding data, and only from members who opted into activity sharing.
+  const events = [];
+  visibleMembers.forEach(m => {
+    if (m.id !== u.id && m.settings.privacy.activityVisibility === false) return;
+    (m.activityLog || []).forEach(ev => events.push({ ...ev, userName: m.id === u.id ? 'You' : m.name }));
+  });
+  events.sort((a, b) => b.at - a.at);
+  if (activityEl) {
+    if (events.length === 0) {
+      activityEl.innerHTML = '<p class="empty-note">No activity yet.</p>';
+    } else {
+      activityEl.innerHTML = events.slice(0, 15).map(ev =>
+        `<div class="friction-item">${escapeHtml(ev.userName)} completed <strong>${escapeHtml(ev.habitName)}</strong>.</div>`
+      ).join('');
+    }
+  }
+}
+
+/* =========================================================================
+   SETTINGS
+   ========================================================================= */
+function populateSettingsForm() {
+  const u = getUser();
+  if (!u) return;
+
+  document.getElementById('display-name-input').value = u.name;
+  document.getElementById('settings-identity-note').innerText =
+    `Profile created ${new Date(u.createdAt).toLocaleDateString()}. Data for this profile is stored only in this browser.`;
+
+  const cons = calcConsistency(u, {});
+  const { current } = calcOverallStreaks(u);
+  document.getElementById('settings-profile-stats').innerText =
+    `${current}-day streak \u00b7 ${cons ? cons.pct + '%' : '\u2014'} consistency \u00b7 ${u.skills.length} skill${u.skills.length === 1 ? '' : 's'} developing`;
+
+  document.querySelectorAll('#appearance-segmented .segmented-btn').forEach(b => b.classList.toggle('active', b.dataset.value === u.settings.appearance));
+
+  document.getElementById('notif-habit-reminders').checked = !!u.settings.notifications.habitReminders;
+  document.getElementById('notif-daily-checkin').checked = !!u.settings.notifications.dailyCheckin;
+  document.getElementById('notif-weekly-review').checked = !!u.settings.notifications.weeklyReview;
+  document.getElementById('notif-group-activity').checked = !!u.settings.notifications.groupActivity;
+
+  document.getElementById('privacy-group-visible').checked = u.settings.privacy.groupVisibility !== false;
+  document.getElementById('privacy-activity-visible').checked = u.settings.privacy.activityVisibility !== false;
+  document.getElementById('privacy-profile-visible').checked = u.settings.privacy.profileVisibility !== false;
+
+  refreshAvatarDisplays();
 }
 
 function updateDisplayName(val) {
   const trimmed = val.trim();
   if (!trimmed) return;
-  state.profiles[state.activeUserKey].name = trimmed;
+  const u = getUser();
+  u.name = trimmed;
   document.getElementById('active-user-name').innerText = trimmed;
   saveData();
-  renderGroup();
 }
 
-/* Settings: stake rules (shared across the group) */
-function updateStakeDisplays() {
-  const penaltyDisplay = document.getElementById('stake-penalty-display');
-  const thresholdDisplay = document.getElementById('stake-threshold-display');
-  if (penaltyDisplay) penaltyDisplay.innerText = `$${state.stakeSettings.penalty}`;
-  if (thresholdDisplay) thresholdDisplay.innerText = `${state.stakeSettings.thresholdPct}%`;
-}
-
-function updateStakeSetting(field, rawValue) {
-  const num = parseFloat(rawValue);
-  if (Number.isNaN(num) || num < 0) return;
-  if (field === 'penalty') {
-    state.stakeSettings.penalty = Math.round(num);
-  } else if (field === 'thresholdPct') {
-    state.stakeSettings.thresholdPct = Math.min(100, Math.round(num));
-  }
+function setAppearance(value) {
+  const u = getUser();
+  u.settings.appearance = value;
   saveData();
-  updateStakeDisplays();
-  refreshGroupIfVisible();
+  applyAppearance();
+  document.querySelectorAll('#appearance-segmented .segmented-btn').forEach(b => b.classList.toggle('active', b.dataset.value === value));
 }
 
-function toggleStakePaid(pKey, monthKey) {
-  const p = state.profiles[pKey];
-  if (!p) return;
-  if (!p.stakeHistory) p.stakeHistory = {};
-  const current = !!(p.stakeHistory[monthKey] && p.stakeHistory[monthKey].paid);
-  p.stakeHistory[monthKey] = { paid: !current };
+function updateNotificationPref(key, checked) {
+  const u = getUser();
+  u.settings.notifications[key] = checked;
   saveData();
-  renderGroup();
 }
 
-/* Settings: profile + reset */
-function populateSettingsForm() {
-  const profile = state.profiles[state.activeUserKey];
-  if (!profile) return;
-
-  const nameInput = document.getElementById('display-name-input');
-  if (nameInput) nameInput.value = profile.name;
-
-  const identityNote = document.getElementById('settings-identity-note');
-  if (identityNote) identityNote.innerText = `Signed in as "${state.activeUserKey}". Data for this profile is stored only in this browser.`;
-
-  const penaltyInput = document.getElementById('stake-penalty-input');
-  const thresholdInput = document.getElementById('stake-threshold-input');
-  if (penaltyInput) penaltyInput.value = state.stakeSettings.penalty;
-  if (thresholdInput) thresholdInput.value = state.stakeSettings.thresholdPct;
-
-  refreshAvatarDisplays();
+function updatePrivacyPref(key, checked) {
+  const u = getUser();
+  u.settings.privacy[key] = checked;
+  saveData();
 }
 
 function resetProfile() {
-  const profile = state.profiles[state.activeUserKey];
-  if (!profile) return;
+  const u = getUser();
+  if (!u) return;
   if (!confirm('Clear all of your habits, skills, logs, and friction history and restart onboarding? This cannot be undone unless you have an export.')) return;
-
-  state.profiles[state.activeUserKey] = {
-    name: profile.name,
-    avatar: profile.avatar,
-    onboarded: false,
-    habits: [],
-    skills: [],
-    logs: {},
-    friction: [],
-    lastSeen: profile.lastSeen,
-    stakeHistory: {}
-  };
+  const kept = newUserShell(u.name);
+  kept.id = u.id;
+  kept.avatar = u.avatar;
+  kept.lastSeen = u.lastSeen;
+  kept.createdAt = u.createdAt;
+  kept.groupId = u.groupId;
+  kept.settings = u.settings;
+  state.users[u.id] = kept;
   saveData();
   showApp();
 }
 
-/* Data Safeguards */
+function clearAllLocalData() {
+  if (!confirm('Erase ALL OnTrack data in this browser \u2014 every profile? This cannot be undone unless you have exports.')) return;
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(SESSION_KEY);
+  } catch (err) { /* ignore */ }
+  location.reload();
+}
+
+/* =========================================================================
+   DATA EXPORT / IMPORT
+   ========================================================================= */
 function exportData() {
-  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
+  const payload = { version: 2, exportedAt: new Date().toISOString(), ...state };
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(payload));
   const downloadAnchor = document.createElement('a');
   downloadAnchor.setAttribute("href", dataStr);
   downloadAnchor.setAttribute("download", `ontrack_backup.json`);
@@ -1095,23 +2014,32 @@ function exportData() {
   downloadAnchor.remove();
 }
 
+function validateImportedState(obj) {
+  return obj && typeof obj === 'object' && obj.users && typeof obj.users === 'object' && obj.groups && typeof obj.groups === 'object';
+}
+
 function importData(e) {
   const file = e.target.files[0];
   if (!file) return;
-
   const fileReader = new FileReader();
   fileReader.onload = function (event) {
     try {
       const imported = JSON.parse(event.target.result);
-      if (!imported || typeof imported !== 'object' || !imported.profiles) {
-        throw new Error('File is missing a "profiles" section.');
+      if (!validateImportedState(imported)) {
+        throw new Error('File is missing "users" and "groups" sections.');
       }
-      state = imported;
-      if (!state.activeUserKey || !state.profiles[state.activeUserKey]) {
-        state.activeUserKey = Object.keys(state.profiles)[0] || null;
+      state = { version: 2, session: imported.session || { activeUserId: null }, users: imported.users, groups: imported.groups };
+      ensureDefaultGroup();
+      if (!state.session.activeUserId || !state.users[state.session.activeUserId]) {
+        state.session.activeUserId = Object.keys(state.users)[0] || null;
       }
       saveData();
-      showApp();
+      if (state.session.activeUserId) {
+        try { localStorage.setItem(SESSION_KEY, state.session.activeUserId); } catch (err) { /* ignore */ }
+        afterLogin();
+      } else {
+        renderAccessScreen();
+      }
     } catch (err) {
       alert('That file could not be imported: ' + err.message);
     } finally {
@@ -1121,58 +2049,31 @@ function importData(e) {
   fileReader.readAsText(file);
 }
 
-function renderAll() {
-  renderHabits();
-  renderSkills();
-  renderGroup();
-  renderFriction();
-}
-
-function escapeHtml(str) {
-  if (str === null || str === undefined) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-/* Profile pictures.
-   Stored as a resized, compressed base64 data URL directly on the
-   profile object (profile.avatar). Everything still lives in
-   localStorage, so images are downscaled hard before saving —
-   otherwise a couple of full-size photos can blow the ~5-10MB
-   per-origin quota and silently break saving for everyone. */
+/* =========================================================================
+   AVATARS
+   ========================================================================= */
 function getInitials(name) {
   if (!name) return '?';
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return '?';
-  const initials = parts.length === 1
-    ? parts[0].slice(0, 2)
-    : parts[0][0] + parts[parts.length - 1][0];
+  const initials = parts.length === 1 ? parts[0].slice(0, 2) : parts[0][0] + parts[parts.length - 1][0];
   return initials.toUpperCase();
 }
 
-function avatarMarkup(profile) {
-  if (profile && profile.avatar) {
-    return `<img src="${profile.avatar}" alt="" class="avatar-img">`;
-  }
-  return `<span class="avatar-initials">${escapeHtml(getInitials(profile ? profile.name : ''))}</span>`;
+function avatarMarkup(user) {
+  if (user && user.avatar) return `<img src="${user.avatar}" alt="" class="avatar-img">`;
+  return `<span class="avatar-initials">${escapeHtml(getInitials(user ? user.name : ''))}</span>`;
 }
 
 function resizeImageToDataUrl(file, maxDim, quality) {
   return new Promise((resolve, reject) => {
-    if (!file.type || !file.type.startsWith('image/')) {
-      reject(new Error('That file is not an image.'));
-      return;
-    }
+    if (!file.type || !file.type.startsWith('image/')) { reject(new Error('That file is not an image.')); return; }
     const reader = new FileReader();
     reader.onerror = () => reject(new Error('Could not read that file.'));
     reader.onload = () => {
       const img = new Image();
       img.onerror = () => reject(new Error('Could not read that image.'));
       img.onload = () => {
-        // Crop to a centered square, then scale down to maxDim x maxDim.
         const side = Math.min(img.width, img.height);
         const sx = (img.width - side) / 2;
         const sy = (img.height - side) / 2;
@@ -1193,18 +2094,13 @@ async function handleAvatarUpload(e) {
   const file = e.target.files[0];
   e.target.value = '';
   if (!file) return;
-
   try {
     const dataUrl = await resizeImageToDataUrl(file, 160, 0.82);
-    const profile = state.profiles[state.activeUserKey];
-    if (!profile) return;
-    profile.avatar = dataUrl;
+    const u = getUser();
+    if (!u) return;
+    u.avatar = dataUrl;
     const ok = saveData();
-    if (!ok) {
-      profile.avatar = null;
-      alert("That photo was too large to save. Try a smaller image.");
-      return;
-    }
+    if (!ok) { u.avatar = null; alert("That photo was too large to save. Try a smaller image."); return; }
     refreshAvatarDisplays();
   } catch (err) {
     alert(err.message || 'Could not use that photo.');
@@ -1212,89 +2108,117 @@ async function handleAvatarUpload(e) {
 }
 
 function removeAvatar() {
-  const profile = state.profiles[state.activeUserKey];
-  if (!profile) return;
-  profile.avatar = null;
+  const u = getUser();
+  if (!u) return;
+  u.avatar = null;
   saveData();
   refreshAvatarDisplays();
 }
 
 function refreshAvatarDisplays() {
-  const profile = state.profiles[state.activeUserKey];
-  if (!profile) return;
+  const u = getUser();
+  if (!u) return;
   const headerAvatar = document.getElementById('header-avatar');
   const settingsAvatar = document.getElementById('settings-avatar');
-  if (headerAvatar) headerAvatar.innerHTML = avatarMarkup(profile);
-  if (settingsAvatar) settingsAvatar.innerHTML = avatarMarkup(profile);
-  refreshGroupIfVisible();
+  if (headerAvatar) headerAvatar.innerHTML = avatarMarkup(u);
+  if (settingsAvatar) settingsAvatar.innerHTML = avatarMarkup(u);
+  if (currentTab === 'group') renderGroup();
 }
 
-/* Global Listeners */
+/* =========================================================================
+   EVENT LISTENERS
+   ========================================================================= */
 function setupEventListeners() {
   const bind = (id, event, handler) => {
     const el = document.getElementById(id);
-    if (el) {
-      el.addEventListener(event, handler);
-    } else {
-      console.warn(`OnTrack: expected element #${id} was not found in the DOM.`);
-    }
+    if (el) el.addEventListener(event, handler);
   };
 
-  bind('unlock-btn', 'click', handleAuth);
-  bind('passkey-input', 'keyup', (e) => { if (e.key === 'Enter') handleAuth(); });
-  bind('lock-btn', 'click', logout);
-  bind('submit-onboarding-btn', 'click', submitOnboarding);
+  bind('lock-btn', 'click', switchProfile);
+  bind('header-avatar-btn', 'click', () => switchTab('settings', document.querySelector('.nav-btn[data-tab="settings"]')));
+
   bind('add-habit-btn', 'click', addHabit);
   bind('new-habit-input', 'keyup', (e) => { if (e.key === 'Enter') addHabit(); });
   bind('prev-month-btn', 'click', () => changeMonth(-1));
   bind('next-month-btn', 'click', () => changeMonth(1));
   bind('today-btn', 'click', jumpToToday);
+
   bind('add-skill-btn', 'click', addSkill);
   bind('new-skill-input', 'keyup', (e) => { if (e.key === 'Enter') addSkill(); });
+
   bind('export-btn', 'click', exportData);
   bind('import-btn', 'click', () => document.getElementById('import-file').click());
   bind('import-file', 'change', importData);
+
   bind('display-name-input', 'change', (e) => updateDisplayName(e.target.value));
-  bind('stake-penalty-input', 'change', (e) => updateStakeSetting('penalty', e.target.value));
-  bind('stake-threshold-input', 'change', (e) => updateStakeSetting('thresholdPct', e.target.value));
+  bind('restart-onboarding-btn', 'click', () => {
+    if (!confirm('Restart onboarding? Your existing habits and skills stay untouched until you finish the new setup.')) return;
+    startOnboarding();
+  });
   bind('reset-profile-btn', 'click', resetProfile);
+  bind('clear-local-btn', 'click', clearAllLocalData);
+
   bind('avatar-upload-btn', 'click', () => document.getElementById('avatar-file').click());
   bind('avatar-file', 'change', handleAvatarUpload);
   bind('avatar-remove-btn', 'click', removeAvatar);
 
-  const groupBody = document.getElementById('group-table-body');
-  if (groupBody) {
-    groupBody.addEventListener('click', (e) => {
-      const btn = e.target.closest('.stake-toggle-btn');
-      if (btn) toggleStakePaid(btn.dataset.pkey, btn.dataset.monthkey);
+  const appearanceSeg = document.getElementById('appearance-segmented');
+  if (appearanceSeg) {
+    appearanceSeg.querySelectorAll('.segmented-btn').forEach(btn => {
+      btn.addEventListener('click', () => setAppearance(btn.dataset.value));
     });
   }
 
+  bind('notif-habit-reminders', 'change', (e) => updateNotificationPref('habitReminders', e.target.checked));
+  bind('notif-daily-checkin', 'change', (e) => updateNotificationPref('dailyCheckin', e.target.checked));
+  bind('notif-weekly-review', 'change', (e) => updateNotificationPref('weeklyReview', e.target.checked));
+  bind('notif-group-activity', 'change', (e) => updateNotificationPref('groupActivity', e.target.checked));
+
+  bind('privacy-group-visible', 'change', (e) => updatePrivacyPref('groupVisibility', e.target.checked));
+  bind('privacy-activity-visible', 'change', (e) => updatePrivacyPref('activityVisibility', e.target.checked));
+  bind('privacy-profile-visible', 'change', (e) => updatePrivacyPref('profileVisibility', e.target.checked));
+
   document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => switchTab(e.target.dataset.tab, e.target));
+    btn.addEventListener('click', (e) => switchTab(btn.dataset.tab, btn));
+  });
+  document.querySelectorAll('.mnav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.tab === 'more') {
+        document.getElementById('more-sheet').classList.remove('hidden');
+      } else {
+        switchTab(btn.dataset.tab, document.querySelector(`.nav-btn[data-tab="${btn.dataset.tab}"]`));
+      }
+    });
+  });
+  bind('more-sheet-close', 'click', () => document.getElementById('more-sheet').classList.add('hidden'));
+  document.querySelectorAll('#more-sheet .modal-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('more-sheet').classList.add('hidden');
+      switchTab(btn.dataset.tab, document.querySelector(`.nav-btn[data-tab="${btn.dataset.tab}"]`));
+    });
   });
 
   const gridBody = document.getElementById('grid-body');
   if (gridBody) {
     gridBody.addEventListener('click', (e) => {
       const cell = e.target.closest('.cell-toggle');
-      if (cell) {
-        toggleHabit(parseInt(cell.dataset.hidx, 10), parseInt(cell.dataset.day, 10));
-        return;
-      }
+      if (cell) { cycleCompletion(cell.dataset.hid, cell.dataset.date, false); return; }
       const actionBtn = e.target.closest('.habit-action-btn');
       if (actionBtn && !actionBtn.disabled) {
-        const hIdx = parseInt(actionBtn.dataset.hidx, 10);
+        const hid = actionBtn.dataset.hid;
         const action = actionBtn.dataset.action;
-        if (action === 'up') moveHabit(hIdx, -1);
-        else if (action === 'down') moveHabit(hIdx, 1);
-        else if (action === 'delete') deleteHabit(hIdx);
+        if (action === 'up') moveHabit(hid, -1);
+        else if (action === 'down') moveHabit(hid, 1);
+        else if (action === 'delete') deleteHabit(hid);
         return;
       }
       const nameEl = e.target.closest('.habit-name');
-      if (nameEl) {
-        startRenameHabit(parseInt(nameEl.dataset.hidx, 10), nameEl);
-      }
+      if (nameEl) openHabitDetail(nameEl.dataset.hid);
+    });
+    // dblclick to rename inline (single click opens detail modal)
+    gridBody.addEventListener('dblclick', (e) => {
+      const nameEl = e.target.closest('.habit-name');
+      if (nameEl) startRenameHabit(nameEl.dataset.hid, nameEl);
     });
   }
 
@@ -1303,17 +2227,23 @@ function setupEventListeners() {
     skillsContainer.addEventListener('click', (e) => {
       const removeBtn = e.target.closest('.skill-remove-btn');
       const hrsBtn = e.target.closest('.add-hrs-btn');
-      if (removeBtn) {
-        removeSkill(parseInt(removeBtn.dataset.sidx, 10));
-      } else if (hrsBtn) {
-        updateHours(parseInt(hrsBtn.dataset.sidx, 10), parseFloat(hrsBtn.dataset.hrs));
+      const evBtn = e.target.closest('.skill-evidence-btn');
+      if (removeBtn) removeSkill(removeBtn.dataset.sid);
+      else if (hrsBtn) updateHours(hrsBtn.dataset.sid, parseFloat(hrsBtn.dataset.hrs));
+      else if (evBtn) {
+        const input = skillsContainer.querySelector(`.skill-evidence-input[data-sid="${evBtn.dataset.sid}"]`);
+        if (input) { addSkillEvidence(evBtn.dataset.sid, input.value); input.value = ''; }
       }
     });
   }
 
-  document.querySelectorAll('.modal-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => submitFailureReason(e.target.dataset.reason));
+  bind('failure-note-submit', 'click', () => {
+    // If a reason wasn't picked yet, default to "Other" with the note.
+    if (pendingMissCell) submitFailureReason('Other');
   });
+
+  bind('habit-detail-close', 'click', () => document.getElementById('habit-detail-modal').classList.add('hidden'));
+  bind('weekly-review-close', 'click', () => document.getElementById('weekly-review-modal').classList.add('hidden'));
 }
 
 window.onload = init;

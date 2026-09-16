@@ -14,38 +14,17 @@
 </head>
 <body>
 
-  <!-- Auth Gate -->
-  <div id="auth-screen" class="auth-overlay">
-    <div class="auth-card">
-      <p class="eyebrow">Get OnTrack</p>
-      <h1 class="auth-title">Enter your key</h1>
-      <p class="auth-sub">Six-character passkey. Request authority from the system architect if unassigned.</p>
-      <input type="password" id="passkey-input" class="input-field" maxlength="6" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="off">
-      <button id="unlock-btn" type="button" class="btn-primary">Unseal</button>
-      <p id="auth-error" class="error-msg hidden">Go Away Goofball, You're not worthy.</p>
+  <!-- Access / Profile picker -->
+  <div id="access-screen" class="auth-overlay">
+    <div class="auth-card" id="access-card">
+      <!-- rendered by app.js: either a profile list, or the create-profile form -->
     </div>
   </div>
 
-  <!-- Onboarding Screen -->
+  <!-- Onboarding Wizard -->
   <div id="onboarding-screen" class="hidden">
-    <div class="onboarding-card">
-      <p class="eyebrow">First-time setup</p>
-      <h2>What are you working on?</h2>
-      <p class="onboard-sub">Pick as many as apply. Each one seeds your grid with a starting set of habits, skills, and things to watch for &mdash; you can edit everything after.</p>
-
-      <div class="struggles-grid">
-        <label><input type="checkbox" class="struggle-cb" value="getting_over_ex"> Getting over an ex</label>
-        <label><input type="checkbox" class="struggle-cb" value="love_and_dating"> Dating &amp; attachment</label>
-        <label><input type="checkbox" class="struggle-cb" value="peer_pressure_fomo"> Peer pressure &amp; FOMO</label>
-        <label><input type="checkbox" class="struggle-cb" value="social_anxiety"> Social anxiety</label>
-        <label><input type="checkbox" class="struggle-cb" value="anger_and_frustration"> Anger &amp; frustration</label>
-        <label><input type="checkbox" class="struggle-cb" value="brain_fog_doomscrolling"> Brain fog &amp; doomscrolling</label>
-        <label><input type="checkbox" class="struggle-cb" value="procrastination_execution"> Procrastination</label>
-        <label><input type="checkbox" class="struggle-cb" value="burnout_overwhelm"> Burnout &amp; overwhelm</label>
-        <label><input type="checkbox" class="struggle-cb" value="life_direction_identity"> Life direction &amp; purpose</label>
-      </div>
-
-      <button id="submit-onboarding-btn" type="button" class="btn-primary">Build my dashboard</button>
+    <div class="onboarding-card" id="onboarding-card">
+      <!-- step content rendered by app.js -->
     </div>
   </div>
 
@@ -55,25 +34,54 @@
       <div class="header-left">
         <span class="brand-title">OnTrack</span>
         <nav class="nav-tabs">
-          <button class="nav-btn active" data-tab="habits">Habits</button>
+          <button class="nav-btn active" data-tab="today">Today</button>
+          <button class="nav-btn" data-tab="habits">Habits</button>
           <button class="nav-btn" data-tab="skills">Skills</button>
           <button class="nav-btn" data-tab="progress">Progress</button>
+          <button class="nav-btn" data-tab="friction">Friction</button>
           <button class="nav-btn" data-tab="group">Group</button>
-          <button class="nav-btn" data-tab="friction">Friction Log</button>
           <button class="nav-btn" data-tab="settings">Settings</button>
         </nav>
       </div>
       <div class="user-badge">
-        <span id="header-avatar" class="avatar avatar-sm"></span>
+        <button id="header-avatar-btn" type="button" class="avatar-btn" title="Profile &amp; settings">
+          <span id="header-avatar" class="avatar avatar-sm"></span>
+        </button>
         <span id="active-user-name">User</span>
-        <button id="lock-btn" type="button" class="lock-btn">Lock</button>
+        <button id="lock-btn" type="button" class="lock-btn">Switch</button>
       </div>
     </header>
 
+    <!-- Mobile bottom nav -->
+    <nav class="mobile-nav">
+      <button class="mnav-btn active" data-tab="today"><span class="mnav-icon">&#9679;</span>Today</button>
+      <button class="mnav-btn" data-tab="habits"><span class="mnav-icon">&#9638;</span>Habits</button>
+      <button class="mnav-btn" data-tab="progress"><span class="mnav-icon">&#8663;</span>Progress</button>
+      <button class="mnav-btn" data-tab="group"><span class="mnav-icon">&#9737;</span>Group</button>
+      <button class="mnav-btn" data-tab="more"><span class="mnav-icon">&#8285;</span>More</button>
+    </nav>
+
+    <!-- "More" sheet for mobile: skills / friction / settings -->
+    <div id="more-sheet" class="modal-overlay hidden">
+      <div class="modal more-sheet-modal">
+        <div class="panel-title modal-title-margin">More</div>
+        <div class="more-sheet-list">
+          <button type="button" class="modal-btn" data-tab="skills">Skills</button>
+          <button type="button" class="modal-btn" data-tab="friction">Friction</button>
+          <button type="button" class="modal-btn" data-tab="settings">Settings</button>
+        </div>
+        <button type="button" class="btn-secondary full-width mt-14" id="more-sheet-close">Close</button>
+      </div>
+    </div>
+
     <main>
+      <!-- Today Tab -->
+      <section id="tab-today">
+        <div id="today-container"></div>
+      </section>
+
       <!-- Habits Tab -->
-      <section id="tab-habits">
-        <div id="advice-container" class="advice-bar hidden"></div>
+      <section id="tab-habits" class="hidden">
         <div class="panel">
           <div class="panel-title">Habit grid</div>
           <div class="month-nav">
@@ -94,16 +102,17 @@
             <input type="text" id="new-habit-input" class="inline-input" placeholder="Habit name">
             <button id="add-habit-btn" type="button" class="btn-secondary">Add</button>
           </div>
+          <p class="hint-text">Tap a cell to cycle: empty &rarr; done &rarr; adjusted &rarr; missed &rarr; empty. Click a habit name for details.</p>
         </div>
       </section>
 
       <!-- Skills Tab -->
       <section id="tab-skills" class="hidden">
         <div class="panel">
-          <div class="panel-title">Active learning targets</div>
+          <div class="panel-title">Things you're getting better at</div>
           <div id="skills-container" class="skills-grid"></div>
           <div class="inline-form skill-form-margin">
-            <input type="text" id="new-skill-input" class="inline-input" placeholder="Skill or project name">
+            <input type="text" id="new-skill-input" class="inline-input" placeholder="Skill name">
             <button id="add-skill-btn" type="button" class="btn-secondary">Add skill</button>
           </div>
         </div>
@@ -123,6 +132,22 @@
           <div class="panel-title">Per-habit breakdown</div>
           <div id="progress-habits" class="progress-habits"></div>
         </div>
+        <div class="panel">
+          <div class="panel-title">Weekly review</div>
+          <div id="weekly-review-inline"></div>
+        </div>
+      </section>
+
+      <!-- Friction Tab -->
+      <section id="tab-friction" class="hidden">
+        <div class="panel">
+          <div class="panel-title">Your friction</div>
+          <div id="friction-analytics"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Recent misses</div>
+          <div id="friction-log-list" class="friction-list"></div>
+        </div>
       </section>
 
       <!-- Group Tab -->
@@ -130,7 +155,7 @@
         <div class="panel">
           <div class="panel-title">Group accountability</div>
           <p id="group-month-note" class="hint-text mb-8"></p>
-          <div class="table-wrapper">
+          <div id="group-table-wrap" class="table-wrapper">
             <table class="data-table">
               <thead>
                 <tr>
@@ -138,29 +163,20 @@
                   <th>Status</th>
                   <th>Last seen</th>
                   <th>Consistency</th>
+                  <th>Streak</th>
                   <th>Done</th>
-                  <th>Elastic</th>
+                  <th>Adjusted</th>
                   <th>Missed</th>
-                  <th>Stake status</th>
                 </tr>
               </thead>
               <tbody id="group-table-body"></tbody>
             </table>
           </div>
+          <div id="group-empty" class="hidden"></div>
         </div>
         <div class="panel">
-          <div class="panel-title">Monthly stake</div>
-          <p class="stake-info">Penalty amount: <span id="stake-penalty-display">$20</span></p>
-          <p class="stake-info">Pass threshold: <span id="stake-threshold-display">80%</span></p>
-          <p class="hint-text">Edit these in Settings. A profile "passes" a month when its consistency for that month meets the threshold.</p>
-        </div>
-      </section>
-
-      <!-- Friction Log Tab -->
-      <section id="tab-friction" class="hidden">
-        <div class="panel">
-          <div class="panel-title">Why habits broke</div>
-          <div id="friction-log-list" class="friction-list"></div>
+          <div class="panel-title">Activity</div>
+          <div id="group-activity" class="friction-list"></div>
         </div>
       </section>
 
@@ -177,7 +193,7 @@
                   <button id="avatar-remove-btn" type="button" class="btn-secondary btn-danger">Remove</button>
                 </div>
                 <input type="file" id="avatar-file" class="hidden" accept="image/*">
-                <p class="hint-text"></p>
+                <p class="hint-text" id="settings-profile-stats"></p>
               </div>
             </div>
             <div>
@@ -185,21 +201,39 @@
               <input type="text" id="display-name-input" class="inline-input full-width">
             </div>
             <p class="hint-text" id="settings-identity-note"></p>
+            <button type="button" id="restart-onboarding-btn" class="btn-secondary">Restart onboarding</button>
           </div>
         </div>
 
         <div class="panel">
-          <div class="panel-title">Stake settings</div>
-          <p class="hint-text mb-8">Applies to everyone in the group &mdash; not just your profile.</p>
-          <div class="settings-form settings-form-row">
-            <div>
-              <label class="input-label" for="stake-penalty-input">Penalty amount ($)</label>
-              <input type="number" id="stake-penalty-input" class="inline-input" min="0" step="1">
+          <div class="panel-title">Appearance</div>
+          <div class="settings-form">
+            <div class="segmented" id="appearance-segmented">
+              <button type="button" class="segmented-btn" data-value="system">System</button>
+              <button type="button" class="segmented-btn" data-value="dark">Dark</button>
+              <button type="button" class="segmented-btn" data-value="light">Light</button>
             </div>
-            <div>
-              <label class="input-label" for="stake-threshold-input">Pass threshold (%)</label>
-              <input type="number" id="stake-threshold-input" class="inline-input" min="0" max="100" step="1">
-            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Notifications</div>
+          <p class="hint-text mb-8">Preferences only &mdash; this is a browser-local app, so real push reminders need a future backend/service worker. These control what OnTrack itself will surface while you have it open.</p>
+          <div class="settings-form">
+            <label class="toggle-row"><input type="checkbox" id="notif-habit-reminders"> Habit reminders</label>
+            <label class="toggle-row"><input type="checkbox" id="notif-daily-checkin"> Daily check-in</label>
+            <label class="toggle-row"><input type="checkbox" id="notif-weekly-review"> Weekly review</label>
+            <label class="toggle-row"><input type="checkbox" id="notif-group-activity"> Group activity</label>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Privacy</div>
+          <div class="settings-form">
+            <label class="toggle-row"><input type="checkbox" id="privacy-group-visible"> Show me in the Group tab</label>
+            <label class="toggle-row"><input type="checkbox" id="privacy-activity-visible"> Show my completions in Group activity</label>
+            <label class="toggle-row"><input type="checkbox" id="privacy-profile-visible"> Show my avatar &amp; name (off = initials only)</label>
+            <p class="hint-text">Your onboarding selections, friction notes, and habit names are never shown to the Group regardless of these settings.</p>
           </div>
         </div>
 
@@ -213,29 +247,49 @@
                 <button id="import-btn" type="button" class="btn-secondary">Import JSON</button>
                 <input type="file" id="import-file" class="hidden" accept=".json">
               </div>
-              <p class="hint-text">Export regularly. Everything lives only in this browser &mdash; see the note in chat about what that means for the Group tab.</p>
+              <p class="hint-text">Everything lives only in this browser. Export regularly if you want a backup.</p>
             </div>
-            <div>
-              <p class="input-label mb-8">Reset</p>
-              <button id="reset-profile-btn" type="button" class="btn-secondary btn-danger">Clear my data &amp; restart onboarding</button>
-              <p class="hint-text">Only clears your own profile. Other profiles in this browser are untouched.</p>
-            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Danger zone</div>
+          <div class="settings-form">
+            <button id="reset-profile-btn" type="button" class="btn-secondary btn-danger">Clear my data &amp; restart onboarding</button>
+            <button id="clear-local-btn" type="button" class="btn-secondary btn-danger">Erase all local OnTrack data</button>
+            <p class="hint-text">These only affect this browser. Other devices are untouched.</p>
           </div>
         </div>
       </section>
     </main>
   </div>
 
-  <!-- Failure Modal -->
+  <!-- Friction Modal -->
   <div id="failure-modal" class="modal-overlay hidden">
     <div class="modal">
-      <div class="panel-title modal-title-margin">Log failure reason</div>
-      <p class="modal-subtitle">Why was this habit missed today?</p>
-      <div class="modal-buttons">
-        <button class="modal-btn" type="button" data-reason="Fatigue">Fatigue</button>
-        <button class="modal-btn" type="button" data-reason="Forgot">Forgot</button>
-        <button class="modal-btn" type="button" data-reason="Busy">Busy / time limit</button>
+      <div class="panel-title modal-title-margin">What happened?</div>
+      <p class="modal-subtitle">Why was this habit missed?</p>
+      <div class="modal-buttons" id="failure-reason-buttons"></div>
+      <div class="mt-14">
+        <input type="text" id="failure-note-input" class="inline-input full-width" placeholder="Optional note">
+        <button type="button" class="btn-primary mt-10" id="failure-note-submit">Save</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Habit Detail Modal -->
+  <div id="habit-detail-modal" class="modal-overlay hidden">
+    <div class="modal habit-detail-modal">
+      <div id="habit-detail-body"></div>
+      <button type="button" class="btn-secondary full-width mt-14" id="habit-detail-close">Close</button>
+    </div>
+  </div>
+
+  <!-- Weekly Review Modal -->
+  <div id="weekly-review-modal" class="modal-overlay hidden">
+    <div class="modal habit-detail-modal">
+      <div id="weekly-review-body"></div>
+      <button type="button" class="btn-secondary full-width mt-14" id="weekly-review-close">Close</button>
     </div>
   </div>
 
