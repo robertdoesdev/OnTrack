@@ -482,9 +482,19 @@ function newUserShell(name) {
    which profile was last logged in (the old session key stored the code
    itself, e.g. "AX7K2M", not the profile's internal key). */
 const LEGACY_KEYS = {
-  "AX7K2M": "user", "BQ4L9P": "friend1", "CR8N3T": "friend2", "DZ5V6H": "friend3",
-  "EY1J8R": "friend4", "FW3S2L": "friend5", "GH2M7X": "friend6", "JK9P4L": "friend7",
-  "MN6R1Q": "friend8"
+  "AX7K2M": "user", 
+  "BQ4L9P": "friend1", 
+  "CR8N3T": "friend2", 
+  "G1X7D4": "friend3",
+  "EY1J8R": "friend4", 
+  "FW3S2L": "friend5", 
+  "GH2M7X": "friend6", 
+  "JK9P4L": "friend7",
+  "NET1Z3": "friend8",
+  "MN6R1Q": "friend9",
+  "GRAC33": "friend10",
+  "EMM44N": "friend11",
+  "Z2Y8K3": "friend12",
 };
 const LEGACY_KEYS_REVERSE = Object.fromEntries(Object.entries(LEGACY_KEYS).map(([code, pKey]) => [pKey, code]));
 
