@@ -292,31 +292,102 @@ function slugify(str) {
 }
 
 /* =========================================================================
+   DATA LAYER — StorageAdapter + DataStore
+   This is the clean seam for a future backend swap:
+
+     UI  →  OnTrack logic  →  DataStore  →  StorageAdapter  →  localStorage
+
+   Today StorageAdapter is a thin synchronous localStorage wrapper. Later,
+   a SupabaseAdapter can implement the same four methods (read/write/remove
+   for the app-state blob, plus the session helpers) — at that point
+   DataStore's methods would become async and callers would `await` them,
+   but nothing above DataStore (rendering, calculations, event handlers)
+   would need to change shape. No network calls, no env vars, and no fake
+   "online" state are introduced here — this is purely a seam, not a
+   backend.
+   ========================================================================= */
+const StorageAdapter = {
+  read(key) {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : null;
+    } catch (err) {
+      console.error(`Could not read "${key}" from local storage.`, err);
+      return null;
+    }
+  },
+  write(key, value) {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+      return true;
+    } catch (err) {
+      console.error(`Could not write "${key}" to local storage.`, err);
+      return false;
+    }
+  },
+  readRaw(key) {
+    try { return localStorage.getItem(key); } catch (err) { return null; }
+  },
+  writeRaw(key, value) {
+    try { localStorage.setItem(key, value); return true; } catch (err) { return false; }
+  },
+  remove(key) {
+    try { localStorage.removeItem(key); return true; } catch (err) { return false; }
+  }
+};
+
+const DataStore = {
+  adapter: StorageAdapter,
+
+  loadState() {
+    const parsed = this.adapter.read(STORAGE_KEY);
+    if (parsed && parsed.users && parsed.groups) return parsed;
+    return null;
+  },
+  saveState(nextState) {
+    return this.adapter.write(STORAGE_KEY, nextState);
+  },
+
+  getSessionUserId() {
+    return this.adapter.readRaw(SESSION_KEY);
+  },
+  setSessionUserId(userId) {
+    return this.adapter.writeRaw(SESSION_KEY, userId);
+  },
+  clearSession() {
+    return this.adapter.remove(SESSION_KEY);
+  },
+
+  // Legacy (pre-rebuild) keys — read-only, used once by migration.
+  readLegacyState() {
+    return this.adapter.read(LEGACY_DATA_KEY);
+  },
+  readLegacySessionKey() {
+    return this.adapter.readRaw(LEGACY_SESSION_KEY);
+  },
+  clearLegacy() {
+    this.adapter.remove(LEGACY_DATA_KEY);
+    this.adapter.remove(LEGACY_SESSION_KEY);
+  }
+};
+
+/* =========================================================================
    PERSISTENCE + MIGRATION
+   saveData()/loadData() stay as the call sites used throughout the rest of
+   this file — they just delegate to DataStore now instead of talking to
+   localStorage directly.
    ========================================================================= */
 function saveData() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    return true;
-  } catch (err) {
-    console.error('Could not save data.', err);
-    return false;
-  }
+  return DataStore.saveState(state);
 }
 
 function loadData() {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed && parsed.users && parsed.groups) {
-        state = parsed;
-        ensureDefaultGroup();
-        return true;
-      }
-    }
-  } catch (err) {
-    console.error('Saved data was unreadable, starting fresh.', err);
+  const parsed = DataStore.loadState();
+  if (parsed) {
+    state = parsed;
+    ensureDefaultGroup();
+    backfillAccessCodes();
+    return true;
   }
   return false;
 }
@@ -328,11 +399,51 @@ function ensureDefaultGroup() {
   }
 }
 
+/* ---------- Access codes ----------
+   A short, human-typeable code that identifies a profile, in the spirit of
+   the original OnTrack passkey — but generated per real profile instead of
+   pointing at a hardcoded Friend1..8 list. Excludes visually ambiguous
+   characters (0/O, 1/I/L). */
+const ACCESS_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+
+function generateAccessCodeCandidate() {
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += ACCESS_CODE_ALPHABET[Math.floor(Math.random() * ACCESS_CODE_ALPHABET.length)];
+  }
+  return code;
+}
+
+function genAccessCode() {
+  let code = generateAccessCodeCandidate();
+  let guard = 0;
+  while (Object.values(state.users).some(u => u.accessCode === code) && guard < 50) {
+    code = generateAccessCodeCandidate();
+    guard++;
+  }
+  return code;
+}
+
+function backfillAccessCodes() {
+  let changed = false;
+  Object.values(state.users).forEach(u => {
+    if (!u.accessCode) { u.accessCode = genAccessCode(); changed = true; }
+  });
+  if (changed) saveData();
+}
+
+function findUserByAccessCode(code) {
+  const norm = String(code || '').trim().toUpperCase();
+  if (!norm) return null;
+  return Object.values(state.users).find(u => u.accessCode === norm) || null;
+}
+
 function newUserShell(name) {
   return {
     id: genId('user'),
     name: name || 'You',
     avatar: null,
+    accessCode: null,
     createdAt: Date.now(),
     lastSeen: null,
     onboarded: false,
@@ -364,6 +475,19 @@ function newUserShell(name) {
        as its own real user so no real history is silently discarded
      - index-based logs are remapped onto newly-generated stable habit IDs
      - stake data is discarded entirely (feature removed) */
+/* The original app's hardcoded passkey table. It never lived in saved
+   data (it was a constant in the old app.js), so it can't be read back —
+   but since it's fixed, mirroring it here lets migration hand each
+   recovered profile back its real original code, and correctly figure out
+   which profile was last logged in (the old session key stored the code
+   itself, e.g. "AX7K2M", not the profile's internal key). */
+const LEGACY_KEYS = {
+  "AX7K2M": "user", "BQ4L9P": "friend1", "CR8N3T": "friend2", "DZ5V6H": "friend3",
+  "EY1J8R": "friend4", "FW3S2L": "friend5", "GH2M7X": "friend6", "JK9P4L": "friend7",
+  "MN6R1Q": "friend8"
+};
+const LEGACY_KEYS_REVERSE = Object.fromEntries(Object.entries(LEGACY_KEYS).map(([code, pKey]) => [pKey, code]));
+
 function migrateLegacyIfPresent() {
   let legacyRaw;
   try {
@@ -382,8 +506,9 @@ function migrateLegacyIfPresent() {
   }
   if (!legacy || !legacy.profiles) return false;
 
-  let lastSessionKey = null;
-  try { lastSessionKey = localStorage.getItem(LEGACY_SESSION_KEY); } catch (err) { /* ignore */ }
+  let lastSessionCode = null;
+  try { lastSessionCode = localStorage.getItem(LEGACY_SESSION_KEY); } catch (err) { /* ignore */ }
+  const lastSessionProfileKey = lastSessionCode ? LEGACY_KEYS[lastSessionCode] : null;
 
   let migratedAny = false;
   let firstMigratedUserId = null;
@@ -399,6 +524,9 @@ function migrateLegacyIfPresent() {
     user.avatar = oldProfile.avatar || null;
     user.onboarded = !!oldProfile.onboarded;
     user.lastSeen = oldProfile.lastSeen || null;
+    // Hand the profile back its real original access code where we know
+    // it, so a returning user can still log in with the code they had.
+    user.accessCode = LEGACY_KEYS_REVERSE[pKey] || genAccessCode();
 
     // Old habits were plain strings at fixed array indexes. Give each a
     // stable ID and keep a map from old index -> new ID for log remapping.
@@ -457,7 +585,7 @@ function migrateLegacyIfPresent() {
     state.groups[DEFAULT_GROUP_ID].members.push(user.id);
     migratedAny = true;
 
-    if (pKey === lastSessionKey || (!firstMigratedUserId && user.onboarded)) {
+    if (pKey === lastSessionProfileKey || (!firstMigratedUserId && user.onboarded)) {
       firstMigratedUserId = user.id;
     }
   });
@@ -465,10 +593,7 @@ function migrateLegacyIfPresent() {
   if (migratedAny) {
     state.session.activeUserId = firstMigratedUserId || Object.values(state.users)[0].id;
     saveData();
-    try {
-      localStorage.removeItem(LEGACY_DATA_KEY);
-      localStorage.removeItem(LEGACY_SESSION_KEY);
-    } catch (err) { /* non-fatal */ }
+    DataStore.clearLegacy();
   }
   return migratedAny;
 }
@@ -683,21 +808,25 @@ function formatLastSeen(lastSeen) {
 }
 
 /* =========================================================================
-   INIT / SESSION / ACCESS SCREEN (profile picker)
-   No fake backend, no fake cross-device auth. This is a local device
-   profile picker: whoever is using this browser chooses or creates their
-   profile. Real backend auth can slot in later behind getUser()/saveData().
+   INIT / SESSION / ACCESS SCREEN
+   Restores the original Access Code idea (a short code that gets you into
+   a profile) on top of the real per-user architecture: every profile has
+   its own generated code instead of a hardcoded Friend1..8 table. This is
+   still local-first, not real auth — no fake backend, no fake cross-device
+   sync — but it gives the "type in your code" flow back, plus a quick-pick
+   list of profiles already used on this device. Real backend auth can
+   slot in later behind DataStore/getUser()/saveData().
    ========================================================================= */
 function init() {
   loadData();
   migrateLegacyIfPresent();
   ensureDefaultGroup();
+  backfillAccessCodes();
   setupEventListeners();
   setupCrossTabSync();
   applyAppearance();
 
-  let sessionUserId = null;
-  try { sessionUserId = localStorage.getItem(SESSION_KEY); } catch (err) { /* ignore */ }
+  const sessionUserId = DataStore.getSessionUserId();
 
   if (sessionUserId && state.users[sessionUserId]) {
     state.session.activeUserId = sessionUserId;
@@ -713,13 +842,17 @@ function afterLogin() {
   const u = getUser();
   if (!u) { renderAccessScreen(); return; }
   u.lastSeen = Date.now();
-  try { localStorage.setItem(SESSION_KEY, u.id); } catch (err) { /* ignore */ }
+  DataStore.setSessionUserId(u.id);
   saveData();
   startPresenceHeartbeat();
   showApp();
 }
 
-function renderAccessScreen() {
+// mode: 'picker' (default) shows existing profiles + code entry + New
+// Profile. isSwitch just changes the heading copy; the picker itself is
+// identical either way — Switch must never skip straight to profile
+// creation when profiles already exist.
+function renderAccessScreen(isSwitch) {
   document.getElementById('app-screen').classList.add('hidden');
   document.getElementById('onboarding-screen').classList.add('hidden');
   const accessScreen = document.getElementById('access-screen');
@@ -736,8 +869,8 @@ function renderAccessScreen() {
 
   card.innerHTML = `
     <p class="eyebrow">OnTrack</p>
-    <h1 class="auth-title">Who's this?</h1>
-    <p class="auth-sub">Choose a profile on this device, or create a new one.</p>
+    <h1 class="auth-title">${isSwitch ? 'Switch profile' : "Who's this?"}</h1>
+    <p class="auth-sub">Choose a profile on this device, or enter an access code.</p>
     <div class="profile-picker-list">
       ${users.map(u => `
         <button type="button" class="profile-pick-btn" data-uid="${u.id}">
@@ -746,6 +879,14 @@ function renderAccessScreen() {
         </button>
       `).join('')}
     </div>
+
+    <div class="access-code-block">
+      <p class="input-label">Have an access code?</p>
+      <input type="text" id="access-code-input" class="input-field access-code-field" placeholder="XXXXXX" maxlength="6" autocomplete="off">
+      <button type="button" class="btn-secondary full-width mt-10" id="access-code-submit">Continue with code</button>
+      <p id="access-code-error" class="error-msg hidden">That access code doesn't match a profile on this device.</p>
+    </div>
+
     <button type="button" class="btn-primary mt-14" id="new-profile-btn">+ New profile</button>
   `;
   card.querySelectorAll('.profile-pick-btn').forEach(btn => {
@@ -756,6 +897,18 @@ function renderAccessScreen() {
   });
   const newBtn = document.getElementById('new-profile-btn');
   if (newBtn) newBtn.addEventListener('click', () => renderCreateProfileForm(card, false));
+
+  const codeInput = document.getElementById('access-code-input');
+  const submitCode = () => {
+    const match = findUserByAccessCode(codeInput.value);
+    if (!match) { document.getElementById('access-code-error').classList.remove('hidden'); return; }
+    document.getElementById('access-code-error').classList.add('hidden');
+    state.session.activeUserId = match.id;
+    afterLogin();
+  };
+  document.getElementById('access-code-submit').addEventListener('click', submitCode);
+  codeInput.addEventListener('input', () => { codeInput.value = codeInput.value.toUpperCase(); });
+  codeInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') submitCode(); });
 }
 
 function renderCreateProfileForm(card, isFirstEver) {
@@ -769,6 +922,12 @@ function renderCreateProfileForm(card, isFirstEver) {
     <button id="create-profile-btn" type="button" class="btn-primary">Continue</button>
     <p id="profile-error" class="error-msg hidden">Enter a name to continue.</p>
     ${!isFirstEver ? '<button type="button" class="btn-secondary full-width mt-10" id="back-to-picker-btn">Back</button>' : ''}
+    ${isFirstEver ? `<div class="access-code-block">
+      <p class="input-label">Already have an access code from before?</p>
+      <input type="text" id="access-code-input" class="input-field access-code-field" placeholder="XXXXXX" maxlength="6" autocomplete="off">
+      <button type="button" class="btn-secondary full-width mt-10" id="access-code-submit">Continue with code</button>
+      <p id="access-code-error" class="error-msg hidden">That access code doesn't match a profile on this device.</p>
+    </div>` : ''}
   `;
   const submit = () => {
     const val = document.getElementById('new-profile-name').value.trim();
@@ -778,11 +937,26 @@ function renderCreateProfileForm(card, isFirstEver) {
   document.getElementById('create-profile-btn').addEventListener('click', submit);
   document.getElementById('new-profile-name').addEventListener('keyup', (e) => { if (e.key === 'Enter') submit(); });
   const backBtn = document.getElementById('back-to-picker-btn');
-  if (backBtn) backBtn.addEventListener('click', renderAccessScreen);
+  if (backBtn) backBtn.addEventListener('click', () => renderAccessScreen(false));
+
+  const codeInput = document.getElementById('access-code-input');
+  if (codeInput) {
+    const submitCode = () => {
+      const match = findUserByAccessCode(codeInput.value);
+      if (!match) { document.getElementById('access-code-error').classList.remove('hidden'); return; }
+      document.getElementById('access-code-error').classList.add('hidden');
+      state.session.activeUserId = match.id;
+      afterLogin();
+    };
+    document.getElementById('access-code-submit').addEventListener('click', submitCode);
+    codeInput.addEventListener('input', () => { codeInput.value = codeInput.value.toUpperCase(); });
+    codeInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') submitCode(); });
+  }
 }
 
 function createProfile(name) {
   const user = newUserShell(name);
+  user.accessCode = genAccessCode();
   state.users[user.id] = user;
   ensureDefaultGroup();
   if (!state.groups[DEFAULT_GROUP_ID].members.includes(user.id)) {
@@ -790,16 +964,28 @@ function createProfile(name) {
   }
   state.session.activeUserId = user.id;
   saveData();
-  afterLogin();
+  renderAccessCodeReveal(user);
+}
+
+function renderAccessCodeReveal(user) {
+  const card = document.getElementById('access-card');
+  card.innerHTML = `
+    <p class="eyebrow">Profile created</p>
+    <h1 class="auth-title">Save your access code</h1>
+    <p class="auth-sub">This is how you'll get back into this exact profile on this or another device later. OnTrack can't recover it for you if it's lost.</p>
+    <div class="access-code-reveal">${escapeHtml(user.accessCode)}</div>
+    <button type="button" class="btn-primary mt-14" id="access-code-continue">I've saved it \u2014 continue</button>
+  `;
+  document.getElementById('access-code-continue').addEventListener('click', afterLogin);
 }
 
 function switchProfile() {
   touchLastSeen();
   stopPresenceHeartbeat();
-  try { localStorage.removeItem(SESSION_KEY); } catch (err) { /* ignore */ }
+  DataStore.clearSession();
   state.session.activeUserId = null;
   document.getElementById('app-screen').classList.add('hidden');
-  renderAccessScreen();
+  renderAccessScreen(true);
 }
 
 /* ---------- Presence + cross-tab sync (same-browser only) ---------- */
@@ -1926,6 +2112,7 @@ function populateSettingsForm() {
   document.getElementById('display-name-input').value = u.name;
   document.getElementById('settings-identity-note').innerText =
     `Profile created ${new Date(u.createdAt).toLocaleDateString()}. Data for this profile is stored only in this browser.`;
+  document.getElementById('settings-access-code').innerText = u.accessCode || '\u2014';
 
   const cons = calcConsistency(u, {});
   const { current } = calcOverallStreaks(u);
@@ -1982,6 +2169,7 @@ function resetProfile() {
   const kept = newUserShell(u.name);
   kept.id = u.id;
   kept.avatar = u.avatar;
+  kept.accessCode = u.accessCode;
   kept.lastSeen = u.lastSeen;
   kept.createdAt = u.createdAt;
   kept.groupId = u.groupId;
@@ -1993,10 +2181,8 @@ function resetProfile() {
 
 function clearAllLocalData() {
   if (!confirm('Erase ALL OnTrack data in this browser \u2014 every profile? This cannot be undone unless you have exports.')) return;
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(SESSION_KEY);
-  } catch (err) { /* ignore */ }
+  DataStore.adapter.remove(STORAGE_KEY);
+  DataStore.clearSession();
   location.reload();
 }
 
@@ -2030,12 +2216,13 @@ function importData(e) {
       }
       state = { version: 2, session: imported.session || { activeUserId: null }, users: imported.users, groups: imported.groups };
       ensureDefaultGroup();
+      backfillAccessCodes();
       if (!state.session.activeUserId || !state.users[state.session.activeUserId]) {
         state.session.activeUserId = Object.keys(state.users)[0] || null;
       }
       saveData();
       if (state.session.activeUserId) {
-        try { localStorage.setItem(SESSION_KEY, state.session.activeUserId); } catch (err) { /* ignore */ }
+        DataStore.setSessionUserId(state.session.activeUserId);
         afterLogin();
       } else {
         renderAccessScreen();
