@@ -1290,7 +1290,7 @@ function renderAccessCodeEntry(card) {
     <p class="eyebrow">Use Access Code</p>
     <h1 class="auth-title">Enter your access code</h1>
     <p class="auth-sub">${cloudNote}</p>
-    <input type="text" id="access-code-input" class="input-field access-code-field" placeholder="OT-XXXX-XXXX" maxlength="11" autocomplete="off">
+    <input type="text" id="access-code-input" class="input-field access-code-field" placeholder="OT-XXXX-XXXX" maxlength="12" autocomplete="off">
     <button type="button" class="btn-primary" id="access-code-submit">Continue</button>
     <p id="access-code-error" class="error-msg hidden"></p>
     <button type="button" class="btn-secondary full-width mt-10" id="back-to-picker-btn">Back</button>
