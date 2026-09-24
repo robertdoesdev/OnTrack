@@ -1126,7 +1126,7 @@ function renderAccessScreen(isSwitch) {
 
     <div class="access-code-block">
       <p class="input-label">I already have an account</p>
-      <input type="text" id="access-code-input" class="input-field access-code-field" placeholder="OT-XXXX-XXXX" maxlength="11" autocomplete="off">
+      <input type="text" id="access-code-input" class="input-field access-code-field" placeholder="OT-XXXX-XXXX" maxlength="12" autocomplete="off">
       <button type="button" class="btn-secondary full-width mt-10" id="access-code-submit">Continue with code</button>
       <p id="access-code-error" class="error-msg hidden">That access code didn't match an account.</p>
       <p class="hint-text mt-8">${cloudNote}</p>
