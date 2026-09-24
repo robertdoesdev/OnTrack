@@ -425,7 +425,10 @@ const SupabaseAdapter = {
       const res = await fetch(cfg.edgeFunctionUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: String(code || '').trim().toUpperCase() })
+        body: JSON.stringify({
+  action: 'redeem',
+  code: String(code || '').trim().toUpperCase()
+})
       });
       if (!res.ok) return { ok: false, reason: res.status === 429 ? 'rate_limited' : 'invalid_code' };
       const payload = await res.json();
