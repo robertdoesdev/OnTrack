@@ -4,24 +4,35 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0a0e0b">
+  <meta name="description" content="OnTrack — understand what matters, see what's getting in the way, and actually do something about it.">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="OnTrack">
   <title>OnTrack</title>
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-  <link rel="manifest" href="/site.webmanifest">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-  <!-- Access / Profile picker -->
+  <!-- Branded startup splash (PWA / first paint). app.js / CSS transitions
+       this out once the real UI is ready; see #app-init-hide in styles.css. -->
+  <div id="app-splash">
+    <div class="splash-inner">
+      <div class="splash-mark">OT</div>
+      <div class="splash-title">ONTRACK</div>
+      <div class="splash-tagline">Build the life you're working toward.</div>
+    </div>
+  </div>
+
+  <!-- Access / Sign in -->
   <div id="access-screen" class="auth-overlay">
     <div class="auth-card" id="access-card">
-      <!-- rendered by app.js: either a profile list, or the create-profile form -->
+      <!-- rendered by app.js -->
     </div>
   </div>
 
@@ -40,15 +51,12 @@
         <nav class="nav-tabs">
           <button class="nav-btn active" data-tab="today">Today</button>
           <button class="nav-btn" data-tab="habits">Habits</button>
-          <button class="nav-btn" data-tab="skills">Skills</button>
           <button class="nav-btn" data-tab="progress">Progress</button>
-          <button class="nav-btn" data-tab="friction">Friction</button>
-          <button class="nav-btn" data-tab="group">Group</button>
-          <button class="nav-btn" data-tab="settings">Settings</button>
+          <button class="nav-btn" data-tab="profile">Profile</button>
         </nav>
       </div>
       <div class="user-badge">
-        <button id="header-avatar-btn" type="button" class="avatar-btn" title="Profile &amp; settings">
+        <button id="header-avatar-btn" type="button" class="avatar-btn" title="Profile">
           <span id="header-avatar" class="avatar avatar-sm"></span>
         </button>
         <span id="active-user-name">User</span>
@@ -56,27 +64,25 @@
       </div>
     </header>
 
-    <!-- Mobile bottom nav -->
+    <!-- Mobile bottom nav — labelled icons, not abstract glyphs -->
     <nav class="mobile-nav">
-      <button class="mnav-btn active" data-tab="today"><span class="mnav-icon">&#9679;</span>Today</button>
-      <button class="mnav-btn" data-tab="habits"><span class="mnav-icon">&#9638;</span>Habits</button>
-      <button class="mnav-btn" data-tab="progress"><span class="mnav-icon">&#8663;</span>Progress</button>
-      <button class="mnav-btn" data-tab="group"><span class="mnav-icon">&#9737;</span>Group</button>
-      <button class="mnav-btn" data-tab="more"><span class="mnav-icon">&#8285;</span>More</button>
+      <button class="mnav-btn active" data-tab="today">
+        <svg class="mnav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 3"></path></svg>
+        <span>Today</span>
+      </button>
+      <button class="mnav-btn" data-tab="habits">
+        <svg class="mnav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"></rect><path d="M3 9h18M8 2v4M16 2v4"></path><path d="M8 14l2.5 2.5L16 11"></path></svg>
+        <span>Habits</span>
+      </button>
+      <button class="mnav-btn" data-tab="progress">
+        <svg class="mnav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V10M11 19V5M18 19v-7"></path><path d="M3 19h18"></path></svg>
+        <span>Progress</span>
+      </button>
+      <button class="mnav-btn" data-tab="profile">
+        <svg class="mnav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 20c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"></path></svg>
+        <span>Profile</span>
+      </button>
     </nav>
-
-    <!-- "More" sheet for mobile: skills / friction / settings -->
-    <div id="more-sheet" class="modal-overlay hidden">
-      <div class="modal more-sheet-modal">
-        <div class="panel-title modal-title-margin">More</div>
-        <div class="more-sheet-list">
-          <button type="button" class="modal-btn" data-tab="skills">Skills</button>
-          <button type="button" class="modal-btn" data-tab="friction">Friction</button>
-          <button type="button" class="modal-btn" data-tab="settings">Settings</button>
-        </div>
-        <button type="button" class="btn-secondary full-width mt-14" id="more-sheet-close">Close</button>
-      </div>
-    </div>
 
     <main>
       <!-- Today Tab -->
@@ -84,50 +90,58 @@
         <div id="today-container"></div>
       </section>
 
-      <!-- Habits Tab -->
+      <!-- Habits Tab (matrix + Skills sub-view) -->
       <section id="tab-habits" class="hidden">
-        <div class="panel">
-          <div class="panel-title">Habit grid</div>
-          <div class="month-nav">
-            <button id="prev-month-btn" type="button" class="btn-secondary month-nav-btn" aria-label="Previous month">&lsaquo;</button>
-            <span id="month-label" class="month-label">Month Year</span>
-            <button id="next-month-btn" type="button" class="btn-secondary month-nav-btn" aria-label="Next month">&rsaquo;</button>
-            <button id="today-btn" type="button" class="btn-secondary today-btn">Today</button>
+        <div class="habits-subtabs">
+          <button type="button" class="habits-subtab-btn active" data-sub="grid">Habits</button>
+          <button type="button" class="habits-subtab-btn" data-sub="skills">Skills I'm Building</button>
+        </div>
+
+        <div id="habits-grid-section">
+          <div class="panel">
+            <div class="panel-title">Habit grid</div>
+            <div class="month-nav">
+              <button id="prev-month-btn" type="button" class="btn-secondary month-nav-btn" aria-label="Previous month">&lsaquo;</button>
+              <span id="month-label" class="month-label">Month Year</span>
+              <button id="next-month-btn" type="button" class="btn-secondary month-nav-btn" aria-label="Next month">&rsaquo;</button>
+              <button id="today-btn" type="button" class="btn-secondary today-btn">Today</button>
+            </div>
+            <div class="grid-wrapper">
+              <table class="habit-table">
+                <thead>
+                  <tr id="grid-header"></tr>
+                </thead>
+                <tbody id="grid-body"></tbody>
+              </table>
+            </div>
+            <div class="inline-form">
+              <input type="text" id="new-habit-input" class="inline-input" placeholder="Habit name">
+              <button id="add-habit-btn" type="button" class="btn-secondary">Add</button>
+            </div>
+            <p class="hint-text">Tap a cell to cycle: empty &rarr; done &rarr; adjusted &rarr; missed &rarr; empty. <strong>Adjusted</strong> = completed a smaller or modified version of the plan. Click a habit name for details.</p>
           </div>
-          <div class="grid-wrapper">
-            <table class="habit-table">
-              <thead>
-                <tr id="grid-header"></tr>
-              </thead>
-              <tbody id="grid-body"></tbody>
-            </table>
+        </div>
+
+        <div id="habits-skills-section" class="hidden">
+          <div class="panel">
+            <div class="panel-title">Skills I'm Building</div>
+            <p class="hint-text mb-8">A habit is something you repeat. A skill is something you're actively trying to get better at &mdash; practice it, log evidence, watch it grow.</p>
+            <div id="skills-container" class="skills-grid"></div>
+            <div class="inline-form skill-form-margin">
+              <input type="text" id="new-skill-input" class="inline-input" placeholder="Skill name">
+              <button id="add-skill-btn" type="button" class="btn-secondary">Add skill</button>
+            </div>
           </div>
-          <div class="inline-form">
-            <input type="text" id="new-habit-input" class="inline-input" placeholder="Habit name">
-            <button id="add-habit-btn" type="button" class="btn-secondary">Add</button>
-          </div>
-          <p class="hint-text">Tap a cell to cycle: empty &rarr; done &rarr; adjusted &rarr; missed &rarr; empty. Click a habit name for details.</p>
         </div>
       </section>
 
-      <!-- Skills Tab -->
-      <section id="tab-skills" class="hidden">
-        <div class="panel">
-          <div class="panel-title">Things you're getting better at</div>
-          <div id="skills-container" class="skills-grid"></div>
-          <div class="inline-form skill-form-margin">
-            <input type="text" id="new-skill-input" class="inline-input" placeholder="Skill name">
-            <button id="add-skill-btn" type="button" class="btn-secondary">Add skill</button>
-          </div>
-        </div>
-      </section>
-
-      <!-- Progress Tab -->
+      <!-- Progress Tab (overview + friction + weekly review) -->
       <section id="tab-progress" class="hidden">
         <div class="panel">
           <div class="panel-title">How far you've come</div>
           <div id="progress-summary" class="progress-summary"></div>
         </div>
+        <div id="progress-narrative"></div>
         <div class="panel">
           <div class="panel-title">Consistency by month</div>
           <div id="progress-chart" class="progress-chart"></div>
@@ -137,80 +151,51 @@
           <div id="progress-habits" class="progress-habits"></div>
         </div>
         <div class="panel">
-          <div class="panel-title">Weekly review</div>
-          <div id="weekly-review-inline"></div>
-        </div>
-      </section>
-
-      <!-- Friction Tab -->
-      <section id="tab-friction" class="hidden">
-        <div class="panel">
-          <div class="panel-title">Your friction</div>
+          <div class="panel-title">Friction &mdash; what's repeatedly getting in the way</div>
           <div id="friction-analytics"></div>
         </div>
         <div class="panel">
           <div class="panel-title">Recent misses</div>
           <div id="friction-log-list" class="friction-list"></div>
         </div>
-      </section>
-
-      <!-- Group Tab -->
-      <section id="tab-group" class="hidden">
         <div class="panel">
-          <div class="panel-title">Group accountability</div>
-          <p id="group-month-note" class="hint-text mb-8"></p>
-          <div id="group-table-wrap" class="table-wrapper">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Profile</th>
-                  <th>Status</th>
-                  <th>Last seen</th>
-                  <th>Consistency</th>
-                  <th>Streak</th>
-                  <th>Done</th>
-                  <th>Adjusted</th>
-                  <th>Missed</th>
-                </tr>
-              </thead>
-              <tbody id="group-table-body"></tbody>
-            </table>
-          </div>
-          <div id="group-empty" class="hidden"></div>
-        </div>
-        <div class="panel">
-          <div class="panel-title">Activity</div>
-          <div id="group-activity" class="friction-list"></div>
+          <div class="panel-title">Weekly review</div>
+          <div id="weekly-review-inline"></div>
         </div>
       </section>
 
-      <!-- Settings Tab -->
-      <section id="tab-settings" class="hidden">
+      <!-- Profile Tab -->
+      <section id="tab-profile" class="hidden">
         <div class="panel">
           <div class="panel-title">Profile</div>
           <div class="settings-form">
             <div class="avatar-row">
-              <span id="settings-avatar" class="avatar avatar-lg"></span>
+              <span id="profile-avatar" class="avatar avatar-lg"></span>
               <div class="avatar-controls">
                 <div class="flex-gap-8">
                   <button id="avatar-upload-btn" type="button" class="btn-secondary">Upload photo</button>
                   <button id="avatar-remove-btn" type="button" class="btn-secondary btn-danger">Remove</button>
                 </div>
                 <input type="file" id="avatar-file" class="hidden" accept="image/*">
-                <p class="hint-text" id="settings-profile-stats"></p>
+                <p class="hint-text" id="profile-stats"></p>
               </div>
             </div>
             <div>
               <label class="input-label" for="display-name-input">Display name</label>
               <input type="text" id="display-name-input" class="inline-input full-width">
             </div>
-            <p class="hint-text" id="settings-identity-note"></p>
-            <div>
-              <p class="input-label">Your access code</p>
-              <p class="hint-text">Use this to get back into this exact profile on this or another device.</p>
-              <span id="settings-access-code" class="settings-access-code"></span>
-            </div>
+            <p class="hint-text" id="profile-identity-note"></p>
             <button type="button" id="restart-onboarding-btn" class="btn-secondary">Restart onboarding</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Access code &amp; account</div>
+          <div class="settings-form">
+            <p class="input-label">Your access code</p>
+            <span id="profile-access-code" class="settings-access-code"></span>
+            <p class="hint-text mt-8">Use this to get back into your account, including from another device.</p>
+            <p id="profile-cloud-status" class="cloud-status-line mt-10"></p>
           </div>
         </div>
 
@@ -227,22 +212,19 @@
 
         <div class="panel">
           <div class="panel-title">Notifications</div>
-          <p class="hint-text mb-8">Preferences only &mdash; this is a browser-local app, so real push reminders need a future backend/service worker. These control what OnTrack itself will surface while you have it open.</p>
+          <p class="hint-text mb-8">You control exactly what OnTrack surfaces. Real push delivery needs the PWA/service-worker permission flow below &mdash; these preferences are honored the moment that's granted.</p>
           <div class="settings-form">
             <label class="toggle-row"><input type="checkbox" id="notif-habit-reminders"> Habit reminders</label>
-            <label class="toggle-row"><input type="checkbox" id="notif-daily-checkin"> Daily check-in</label>
+            <label class="toggle-row"><input type="checkbox" id="notif-challenge-reminders"> Today's challenge reminders</label>
             <label class="toggle-row"><input type="checkbox" id="notif-weekly-review"> Weekly review</label>
-            <label class="toggle-row"><input type="checkbox" id="notif-group-activity"> Group activity</label>
+            <label class="toggle-row"><input type="checkbox" id="notif-daily-checkin"> Daily check-in</label>
           </div>
         </div>
 
         <div class="panel">
           <div class="panel-title">Privacy</div>
           <div class="settings-form">
-            <label class="toggle-row"><input type="checkbox" id="privacy-group-visible"> Show me in the Group tab</label>
-            <label class="toggle-row"><input type="checkbox" id="privacy-activity-visible"> Show my completions in Group activity</label>
-            <label class="toggle-row"><input type="checkbox" id="privacy-profile-visible"> Show my avatar &amp; name (off = initials only)</label>
-            <p class="hint-text">Your onboarding selections, friction notes, and habit names are never shown to the Group regardless of these settings.</p>
+            <p class="hint-text" id="privacy-data-note"></p>
           </div>
         </div>
 
@@ -256,7 +238,6 @@
                 <button id="import-btn" type="button" class="btn-secondary">Import JSON</button>
                 <input type="file" id="import-file" class="hidden" accept=".json">
               </div>
-              <p class="hint-text">Everything lives only in this browser. Export regularly if you want a backup.</p>
             </div>
           </div>
         </div>
@@ -266,7 +247,7 @@
           <div class="settings-form">
             <button id="reset-profile-btn" type="button" class="btn-secondary btn-danger">Clear my data &amp; restart onboarding</button>
             <button id="clear-local-btn" type="button" class="btn-secondary btn-danger">Erase all local OnTrack data</button>
-            <p class="hint-text">These only affect this browser. Other devices are untouched.</p>
+            <p class="hint-text">These only affect this browser. A connected account is untouched.</p>
           </div>
         </div>
       </section>
@@ -302,6 +283,11 @@
     </div>
   </div>
 
+  <!-- Supabase client (only used once supabase-config.js has real
+       credentials — see SETUP.md). Loading this script never makes a
+       network call by itself. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="supabase-config.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

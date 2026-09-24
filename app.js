@@ -1,27 +1,30 @@
 /* =========================================================================
    ONTRACK — app.js
-   Local-first personal accountability system.
-   Vanilla JS, no build step. Data lives in localStorage under 'ontrack_data'.
+   A personal system: understand what matters, see what's getting in the
+   way, build a system, execute today, learn from friction, review weekly.
+   Vanilla JS, no build step. Local-first; Supabase becomes the source of
+   truth for an account once configured (see supabase-config.js).
    ========================================================================= */
 
 const STORAGE_KEY = 'ontrack_data';
 const SESSION_KEY = 'ontrack_session';
 const LEGACY_DATA_KEY = 'four_keys_data';
 const LEGACY_SESSION_KEY = 'four_keys_session';
-const DEFAULT_GROUP_ID = 'default';
-const ONLINE_THRESHOLD_MS = 2 * 60 * 1000;
 
 const MONTH_NAMES = ["January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"];
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 const STATUS = { DONE: 'done', ADJUSTED: 'adjusted', MISSED: 'missed' };
+const STATUS_HELP = {
+  done: 'Completed as planned.',
+  adjusted: 'Completed a smaller or modified version of the planned habit \u2014 for example a 10-minute workout instead of the planned 30 minutes. It still counts toward your consistency.',
+  missed: "Didn't happen. Worth a quick note on why, so patterns can show up in Friction."
+};
 
 /* -------------------------------------------------------------------------
-   ONBOARDING CATALOG
-   Categories + items exactly as specified. `private: true` categories
-   (sexuality & identity) are never surfaced to the Group under any
-   circumstance.
+   ONBOARDING CATALOG — categories stay broad on purpose; the flow around
+   them is what changed (see the wizard further down).
    ------------------------------------------------------------------------- */
 const ONBOARDING_CATEGORIES = [
   {
@@ -110,12 +113,35 @@ const ONBOARDING_CATEGORIES = [
       "Figuring out what success means to me", "Creating a vision for my life"]
   }
 ];
+function findCategory(catId) { return ONBOARDING_CATEGORIES.find(c => c.id === catId); }
 
-const FRICTION_BLOCKERS = [
-  "I forget", "I lose motivation", "I get distracted", "I overthink",
-  "I don't have enough time", "I get overwhelmed", "I avoid uncomfortable things",
-  "I start strong and fade", "I don't know where to start", "My environment makes it difficult"
-];
+/* Contextual "what's getting in your way" options, tailored per category so
+   the question feels like it understands the person rather than collecting
+   a generic label. */
+const CATEGORY_BLOCKERS = {
+  mind_focus: ["Procrastination", "Difficulty concentrating", "Overthinking", "Lack of discipline",
+    "Don't know where to start", "Getting distracted easily"],
+  identity_self: ["Overthinking", "Caring too much what others think", "People-pleasing",
+    "Don't know where to start", "Inconsistent routines"],
+  dating_relationships: ["Overthinking", "Fear of rejection", "Fear of commitment",
+    "Don't know where to start", "Choosing unavailable people"],
+  sexuality_identity: ["Overthinking", "Pressure to have an answer right away", "Fear of judgment",
+    "Don't know where to start"],
+  social_life: ["Overthinking", "Fear of rejection", "Don't know where to start",
+    "Don't meet enough people", "Prefer staying alone", "Difficulty maintaining friendships"],
+  digital_life: ["Too much scrolling", "Constant notifications", "Can't stay focused",
+    "Gaming", "Social media", "Phone dependence"],
+  money_independence: ["Inconsistent income", "Overspending", "Difficulty saving",
+    "Don't know where to start", "Lack of opportunities"],
+  school_career: ["Procrastination", "Difficulty concentrating", "Too much workload",
+    "Poor time management", "Lack of motivation", "Don't know where to start"],
+  lifestyle: ["Inconsistent routines", "Low energy", "Poor time management",
+    "Don't know where to start", "Difficulty maintaining routines"],
+  emotional_regulation: ["Overthinking", "Difficulty expressing emotions", "Avoiding difficult situations",
+    "Inconsistent routines", "Difficulty calming down"],
+  purpose_life: ["Lack of motivation", "Don't know where to start", "Overthinking",
+    "Fear of failure", "Difficulty maintaining routines"]
+};
 
 /* -------------------------------------------------------------------------
    CATEGORY PRESET LIBRARY
@@ -158,48 +184,48 @@ const CATEGORY_PRESETS = {
       "Message one friend you haven't spoken to in a while"],
     skills: ["Conversation initiation", "Active listening"],
     watchFor: ["Using your phone as a social shield", "Replaying an interaction on a loop afterward"],
-    frictionPatterns: ["Distraction", "I avoid uncomfortable things"]
+    frictionPatterns: ["Distraction", "Don't know where to start"]
   },
   digital_life: {
     habits: ["No phone in the first 20 minutes of the day", "Use grayscale mode during work/study hours",
       "One screen-free hour before bed"],
     skills: ["Attention control", "Digital boundaries"],
     watchFor: ["Checking notifications the instant you wake up", "Opening an app out of boredom, not intent"],
-    frictionPatterns: ["Distraction", "I forget"]
+    frictionPatterns: ["Distraction", "Phone dependence"]
   },
   money_independence: {
     habits: ["Log every purchase for the day", "Wait 24 hours before a non-essential purchase",
       "Review spending once a week"],
     skills: ["Budgeting", "Delayed gratification"],
     watchFor: ["Buying something to match what others have", "Avoiding looking at your balance"],
-    frictionPatterns: ["Avoidance", "Poor planning"]
+    frictionPatterns: ["Avoidance", "Overspending"]
   },
   school_career: {
     habits: ["Study in one uninterrupted 25-minute block", "Spend 15 minutes on your portfolio or resume",
       "Write tomorrow's top study priority tonight"],
     skills: ["Time management", "Deep work"],
     watchFor: ["Opening social apps mid-study session", "Waiting for motivation instead of starting"],
-    frictionPatterns: ["Distraction", "Poor planning"]
+    frictionPatterns: ["Distraction", "Poor time management"]
   },
   lifestyle: {
     habits: ["Lights out by a consistent time", "20-minute walk outside", "Drink water before your first coffee"],
     skills: ["Routine building", "Energy management"],
     watchFor: ["Staying up scrolling past your bedtime target", "Skipping meals when busy"],
-    frictionPatterns: ["Fatigue", "Poor planning"]
+    frictionPatterns: ["Fatigue", "Inconsistent routines"]
   },
   emotional_regulation: {
     habits: ["10-minute decompression after a stressful event", "Note today's emotional trigger in one line",
       "Pause 10 seconds before responding when upset"],
     skills: ["Emotional regulation", "De-escalation"],
     watchFor: ["Responding immediately while still activated", "Holding a grudge instead of naming it"],
-    frictionPatterns: ["Overthinking", "I get overwhelmed"]
+    frictionPatterns: ["Overthinking", "Difficulty calming down"]
   },
   purpose_life: {
     habits: ["Spend 20 minutes on a long-term goal", "Weekly review of what mattered this week",
       "Read 10 pages toward something you care about"],
     skills: ["Self-reflection", "Long-term thinking"],
     watchFor: ["Chasing short-term distraction over long-term goals", "Letting fear of failure stall a start"],
-    frictionPatterns: ["No motivation", "I don't know where to start"]
+    frictionPatterns: ["Lack of motivation", "Don't know where to start"]
   }
 };
 
@@ -224,34 +250,33 @@ const INTERVENTIONS = {
 /* -------------------------------------------------------------------------
    STATE SHAPE
    users[userId] = {
-     id, name, avatar, createdAt, lastSeen, onboarded, groupId,
+     id, name, avatar, accessCode, createdAt, lastSeen, onboarded,
      habits: [{id,name,description,category,frequency:{type,days},createdAt,active,reminder}],
      completions: { "habitId__YYYY-MM-DD": "done"|"adjusted"|"missed" },
      skills: [{id,name,description,progress,hours,relatedProblem,evidence:[{id,date,text}]}],
      friction: [{id,habitId,habitNameSnapshot,date,reason,note}],
      watchFor: [string],
-     onboardingSelections: { problems, priorities, impact, blockers } -- PRIVATE, never shown to group,
-     activityLog: [{id,habitId,habitName,date,at}] -- for group activity feed,
-     weeklyReviews: [{weekKey,reflection,createdAt,snapshot}],
+     priorities: [{key,catId,label,isTop}],   -- feeds Today's Challenge
+     onboardingSelections: { problems, blockers, completedAt },
+     weeklyReviews: [{weekKey,reflection,answers,createdAt,snapshot}],
+     challenges: { "YYYY-MM-DD": {habitId, text, completed} },
      settings: { appearance, notifications:{...}, privacy:{...} }
    }
-   groups[groupId] = { id, name, createdAt, members:[userId] }
+   No `groups` — OnTrack is a personal product, not a social one.
    ------------------------------------------------------------------------- */
 function defaultState() {
   return {
-    version: 2,
+    version: 3,
     session: { activeUserId: null },
-    users: {},
-    groups: {
-      [DEFAULT_GROUP_ID]: { id: DEFAULT_GROUP_ID, name: 'OnTrack', createdAt: Date.now(), members: [] }
-    }
+    users: {}
   };
 }
 
 let state = defaultState();
 let pendingMissCell = null;
-let onboard = { step: 1, problems: [], priorities: [], impact: {}, blockers: [] };
+let onboard = { step: 1, problems: [], priorities: [], blockers: [] };
 let currentTab = 'today';
+let habitsSubTab = 'grid'; // 'grid' | 'skills'
 
 const today = new Date();
 let viewYear = today.getFullYear();
@@ -260,6 +285,13 @@ let viewMonth = today.getMonth() + 1;
 /* ---------- ID generation ---------- */
 function genId(prefix) {
   return `${prefix}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+}
+function genUuid() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
 }
 
 /* ---------- Date helpers ---------- */
@@ -284,27 +316,20 @@ function escapeHtml(str) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-function slugify(str) {
-  return String(str).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 /* =========================================================================
-   DATA LAYER — StorageAdapter + DataStore
-   This is the clean seam for a future backend swap:
+   DATA LAYER — StorageAdapter + SupabaseAdapter + DataStore
 
-     UI  →  OnTrack logic  →  DataStore  →  StorageAdapter  →  localStorage
+     UI  →  OnTrack logic  →  DataStore  →  Adapter  →  localStorage / Supabase
 
-   Today StorageAdapter is a thin synchronous localStorage wrapper. Later,
-   a SupabaseAdapter can implement the same four methods (read/write/remove
-   for the app-state blob, plus the session helpers) — at that point
-   DataStore's methods would become async and callers would `await` them,
-   but nothing above DataStore (rendering, calculations, event handlers)
-   would need to change shape. No network calls, no env vars, and no fake
-   "online" state are introduced here — this is purely a seam, not a
-   backend.
+   DataStore picks StorageAdapter (localStorage) by default. If
+   supabase-config.js provides a URL + anon key, DataStore instead uses
+   SupabaseAdapter, and localStorage becomes a local cache the app reads
+   instantly on load while the network round-trip completes. This file
+   never hardcodes credentials — see supabase-config.js and SETUP.md.
    ========================================================================= */
 const StorageAdapter = {
   read(key) {
@@ -336,46 +361,277 @@ const StorageAdapter = {
   }
 };
 
+/* ---------- Supabase adapter (only active once configured) ----------
+   supabase-config.js defines window.ONTRACK_SUPABASE_CONFIG = { url, anonKey, edgeFunctionUrl }.
+   Until real values are filled in there, isSupabaseConfigured() is false
+   and the app runs entirely on StorageAdapter (localStorage), exactly as
+   before. Nothing here fakes a network connection or invents data. */
+function isSupabaseConfigured() {
+  const cfg = window.ONTRACK_SUPABASE_CONFIG;
+  return !!(cfg && cfg.url && cfg.anonKey && !cfg.url.includes('YOUR_') && !cfg.anonKey.includes('YOUR_'));
+}
+
+let supabaseClient = null;
+function getSupabaseClient() {
+  if (!isSupabaseConfigured()) return null;
+  if (supabaseClient) return supabaseClient;
+  if (typeof window.supabase === 'undefined' || !window.supabase.createClient) {
+    console.error('Supabase config is set but the supabase-js library did not load.');
+    return null;
+  }
+  const cfg = window.ONTRACK_SUPABASE_CONFIG;
+  supabaseClient = window.supabase.createClient(cfg.url, cfg.anonKey);
+  return supabaseClient;
+}
+
+/* Maps between this app's in-memory user shape (unchanged from the
+   localStorage era, so every render/calc function keeps working as-is)
+   and the normalized Supabase tables described in supabase-schema.sql. */
+const SupabaseAdapter = {
+  // ---- Cloud account lifecycle ----
+  // Creates a brand-new cloud account (anonymous Supabase Auth user, so
+  // there's no email/password — the Access Code is the recovery
+  // mechanism) and an initial profiles row.
+  async createCloudProfile(name) {
+    const sb = getSupabaseClient();
+    if (!sb) return null;
+    const { data: authData, error: authErr } = await sb.auth.signInAnonymously();
+    if (authErr || !authData.user) { console.error('Supabase sign-up failed', authErr); return null; }
+    const userId = authData.user.id;
+    const accessCode = genAccessCode();
+    const { error: insertErr } = await sb.from('profiles').insert({
+      id: userId, name, access_code: accessCode, onboarded: false,
+      settings: newUserShell(name).settings
+    });
+    if (insertErr) { console.error('Could not create cloud profile', insertErr); return null; }
+    const shell = newUserShell(name);
+    shell.id = userId;
+    shell.accessCode = accessCode;
+    return shell;
+  },
+
+  // Redeems a short access code for a session on THIS device, via a
+  // server-side Edge Function that holds the service-role key (never
+  // shipped to the client). The function validates the code and mints a
+  // real Supabase session, which is the secure way to let a code (rather
+  // than a password) recover an account across devices.
+  async redeemAccessCode(code) {
+    const cfg = window.ONTRACK_SUPABASE_CONFIG;
+    if (!cfg || !cfg.edgeFunctionUrl) {
+      console.error('No edgeFunctionUrl configured for access-code redemption.');
+      return { ok: false, reason: 'not_configured' };
+    }
+    try {
+      const res = await fetch(cfg.edgeFunctionUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: String(code || '').trim().toUpperCase() })
+      });
+      if (!res.ok) return { ok: false, reason: res.status === 429 ? 'rate_limited' : 'invalid_code' };
+      const payload = await res.json();
+      const sb = getSupabaseClient();
+      if (!sb || !payload.access_token || !payload.refresh_token) return { ok: false, reason: 'invalid_response' };
+      const { error } = await sb.auth.setSession({
+        access_token: payload.access_token,
+        refresh_token: payload.refresh_token
+      });
+      if (error) return { ok: false, reason: 'session_failed' };
+      return { ok: true, userId: payload.user_id };
+    } catch (err) {
+      console.error('Access code redemption failed', err);
+      return { ok: false, reason: 'network_error' };
+    }
+  },
+
+  async getSessionUserId() {
+    const sb = getSupabaseClient();
+    if (!sb) return null;
+    const { data } = await sb.auth.getSession();
+    return data && data.session ? data.session.user.id : null;
+  },
+
+  async signOut() {
+    const sb = getSupabaseClient();
+    if (sb) await sb.auth.signOut();
+  },
+
+  // ---- Full profile fetch: reassembles the normalized tables back into
+  // this app's existing nested user object shape. ----
+  async fetchProfileState(userId) {
+    const sb = getSupabaseClient();
+    if (!sb) return null;
+    const [profileRes, habitsRes, complRes, frictionRes, prioritiesRes, skillsRes, reviewsRes, challengesRes] = await Promise.all([
+      sb.from('profiles').select('*').eq('id', userId).single(),
+      sb.from('habits').select('*').eq('user_id', userId),
+      sb.from('habit_completions').select('*').eq('user_id', userId),
+      sb.from('friction_items').select('*').eq('user_id', userId),
+      sb.from('priorities').select('*').eq('user_id', userId),
+      sb.from('skills').select('*').eq('user_id', userId),
+      sb.from('weekly_reviews').select('*').eq('user_id', userId),
+      sb.from('challenges').select('*').eq('user_id', userId)
+    ]);
+    if (profileRes.error || !profileRes.data) { console.error('Could not fetch cloud profile', profileRes.error); return null; }
+    const p = profileRes.data;
+
+    const user = newUserShell(p.name);
+    user.id = p.id;
+    user.accessCode = p.access_code;
+    user.avatar = p.avatar_url || null;
+    user.createdAt = new Date(p.created_at).getTime();
+    user.lastSeen = p.last_seen ? new Date(p.last_seen).getTime() : null;
+    user.onboarded = !!p.onboarded;
+    user.settings = p.settings || user.settings;
+
+    user.habits = (habitsRes.data || []).map(h => ({
+      id: h.id, name: h.name, description: h.description || '', category: h.category || '',
+      frequency: h.frequency || { type: 'daily' }, createdAt: new Date(h.created_at).getTime(),
+      active: h.active !== false, reminder: h.reminder || null
+    }));
+
+    user.completions = {};
+    (complRes.data || []).forEach(c => { user.completions[`${c.habit_id}__${c.date}`] = c.status; });
+
+    user.friction = (frictionRes.data || []).map(f => ({
+      id: f.id, habitId: f.habit_id, habitNameSnapshot: f.habit_name_snapshot || '',
+      date: f.date, reason: f.reason, note: f.note || ''
+    }));
+
+    user.priorities = (prioritiesRes.data || []).map(pr => ({
+      key: `${pr.category}::${pr.label}`, catId: pr.category, label: pr.label, isTop: !!pr.is_top
+    }));
+
+    user.skills = (skillsRes.data || []).map(s => ({
+      id: s.id, name: s.name, description: s.description || '', progress: s.progress || 0,
+      hours: s.hours || 0, relatedProblem: s.related_problem || '', evidence: s.evidence || []
+    }));
+
+    user.weeklyReviews = (reviewsRes.data || []).map(r => ({
+      weekKey: r.week_key, reflection: r.reflection || '', answers: r.answers || {},
+      createdAt: new Date(r.created_at).getTime(), snapshot: r.snapshot || {}
+    }));
+
+    user.challenges = {};
+    (challengesRes.data || []).forEach(c => {
+      user.challenges[c.date] = { habitId: c.habit_id, text: c.text, completed: !!c.completed };
+    });
+
+    return user;
+  },
+
+  // ---- Best-effort push: upserts every collection. Called after
+  // saveData() when a cloud session exists; never blocks the UI. Delivers
+  // "online: Supabase <-> local cache, offline: local cache only" without
+  // a full conflict-resolution engine, which isn't needed yet at this
+  // product's scale (single device editing a record at a time). ----
+  async pushFullState(user) {
+    const sb = getSupabaseClient();
+    if (!sb) return false;
+    try {
+      await sb.from('profiles').upsert({
+        id: user.id, name: user.name, avatar_url: user.avatar, access_code: user.accessCode,
+        onboarded: user.onboarded, settings: user.settings, last_seen: new Date().toISOString()
+      });
+
+      if (user.habits.length) {
+        await sb.from('habits').upsert(user.habits.map(h => ({
+          id: h.id, user_id: user.id, name: h.name, description: h.description, category: h.category,
+          frequency: h.frequency, active: h.active, reminder: h.reminder,
+          created_at: new Date(h.createdAt).toISOString()
+        })));
+      }
+
+      const complRows = Object.keys(user.completions).map(key => {
+        const [habitId, date] = key.split('__');
+        return { user_id: user.id, habit_id: habitId, date, status: user.completions[key] };
+      });
+      if (complRows.length) await sb.from('habit_completions').upsert(complRows, { onConflict: 'habit_id,date' });
+
+      if (user.friction.length) {
+        await sb.from('friction_items').upsert(user.friction.map(f => ({
+          id: f.id, user_id: user.id, habit_id: f.habitId, habit_name_snapshot: f.habitNameSnapshot,
+          date: f.date, reason: f.reason, note: f.note
+        })));
+      }
+
+      if (user.priorities && user.priorities.length) {
+        await sb.from('priorities').upsert(user.priorities.map(pr => ({
+          user_id: user.id, category: pr.catId, label: pr.label, is_top: !!pr.isTop
+        })), { onConflict: 'user_id,category,label' });
+      }
+
+      if (user.skills.length) {
+        await sb.from('skills').upsert(user.skills.map(s => ({
+          id: s.id, user_id: user.id, name: s.name, description: s.description, progress: s.progress,
+          hours: s.hours, related_problem: s.relatedProblem, evidence: s.evidence
+        })));
+      }
+
+      if (user.weeklyReviews.length) {
+        await sb.from('weekly_reviews').upsert(user.weeklyReviews.map(r => ({
+          user_id: user.id, week_key: r.weekKey, reflection: r.reflection, answers: r.answers || {},
+          snapshot: r.snapshot
+        })), { onConflict: 'user_id,week_key' });
+      }
+
+      const challengeRows = Object.keys(user.challenges || {}).map(date => ({
+        user_id: user.id, date, habit_id: user.challenges[date].habitId,
+        text: user.challenges[date].text, completed: !!user.challenges[date].completed
+      }));
+      if (challengeRows.length) await sb.from('challenges').upsert(challengeRows, { onConflict: 'user_id,date' });
+
+      return true;
+    } catch (err) {
+      console.error('Cloud sync failed (data is still safe in the local cache).', err);
+      return false;
+    }
+  }
+};
+
+/* ---------- DataStore ----------
+   The single seam everything else talks to. `local*` methods always hit
+   StorageAdapter so the app is instantly usable offline. `cloud*` methods
+   are only meaningful once isSupabaseConfigured() is true, and every call
+   site treats their failure as non-fatal (the local cache is always the
+   fallback of record). */
 const DataStore = {
   adapter: StorageAdapter,
 
   loadState() {
     const parsed = this.adapter.read(STORAGE_KEY);
-    if (parsed && parsed.users && parsed.groups) return parsed;
+    if (parsed && parsed.users) return parsed;
     return null;
   },
   saveState(nextState) {
-    return this.adapter.write(STORAGE_KEY, nextState);
+    const ok = this.adapter.write(STORAGE_KEY, nextState);
+    this.maybeSyncToCloud();
+    return ok;
   },
 
-  getSessionUserId() {
-    return this.adapter.readRaw(SESSION_KEY);
-  },
-  setSessionUserId(userId) {
-    return this.adapter.writeRaw(SESSION_KEY, userId);
-  },
-  clearSession() {
-    return this.adapter.remove(SESSION_KEY);
-  },
+  getSessionUserId() { return this.adapter.readRaw(SESSION_KEY); },
+  setSessionUserId(userId) { return this.adapter.writeRaw(SESSION_KEY, userId); },
+  clearSession() { return this.adapter.remove(SESSION_KEY); },
 
-  // Legacy (pre-rebuild) keys — read-only, used once by migration.
-  readLegacyState() {
-    return this.adapter.read(LEGACY_DATA_KEY);
-  },
-  readLegacySessionKey() {
-    return this.adapter.readRaw(LEGACY_SESSION_KEY);
-  },
-  clearLegacy() {
-    this.adapter.remove(LEGACY_DATA_KEY);
-    this.adapter.remove(LEGACY_SESSION_KEY);
+  readLegacyState() { return this.adapter.read(LEGACY_DATA_KEY); },
+  readLegacySessionKey() { return this.adapter.readRaw(LEGACY_SESSION_KEY); },
+  clearLegacy() { this.adapter.remove(LEGACY_DATA_KEY); this.adapter.remove(LEGACY_SESSION_KEY); },
+
+  // Fire-and-forget push of the active user to Supabase, debounced so a
+  // burst of local saves (e.g. ticking off several habits) doesn't spam
+  // the network. Never awaited by callers — the UI never blocks on it.
+  _syncTimer: null,
+  maybeSyncToCloud() {
+    if (!isSupabaseConfigured()) return;
+    clearTimeout(this._syncTimer);
+    this._syncTimer = setTimeout(async () => {
+      const u = getUser();
+      if (!u) return;
+      await SupabaseAdapter.pushFullState(u);
+    }, 1200);
   }
 };
 
 /* =========================================================================
    PERSISTENCE + MIGRATION
-   saveData()/loadData() stay as the call sites used throughout the rest of
-   this file — they just delegate to DataStore now instead of talking to
-   localStorage directly.
    ========================================================================= */
 function saveData() {
   return DataStore.saveState(state);
@@ -385,33 +641,25 @@ function loadData() {
   const parsed = DataStore.loadState();
   if (parsed) {
     state = parsed;
-    ensureDefaultGroup();
     backfillAccessCodes();
     return true;
   }
   return false;
 }
 
-function ensureDefaultGroup() {
-  if (!state.groups) state.groups = {};
-  if (!state.groups[DEFAULT_GROUP_ID]) {
-    state.groups[DEFAULT_GROUP_ID] = { id: DEFAULT_GROUP_ID, name: 'OnTrack', createdAt: Date.now(), members: [] };
-  }
-}
-
 /* ---------- Access codes ----------
-   A short, human-typeable code that identifies a profile, in the spirit of
-   the original OnTrack passkey — but generated per real profile instead of
-   pointing at a hardcoded Friend1..8 list. Excludes visually ambiguous
-   characters (0/O, 1/I/L). */
+   A short, human-typeable code that identifies an account. Format
+   OT-XXXX-XXXX (letters/digits, ambiguous characters like 0/O/1/I/L
+   excluded) so it reads clearly out loud or off a screen. */
 const ACCESS_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 
 function generateAccessCodeCandidate() {
-  let code = '';
-  for (let i = 0; i < 6; i++) {
-    code += ACCESS_CODE_ALPHABET[Math.floor(Math.random() * ACCESS_CODE_ALPHABET.length)];
-  }
-  return code;
+  const block = () => {
+    let s = '';
+    for (let i = 0; i < 4; i++) s += ACCESS_CODE_ALPHABET[Math.floor(Math.random() * ACCESS_CODE_ALPHABET.length)];
+    return s;
+  };
+  return `OT-${block()}-${block()}`;
 }
 
 function genAccessCode() {
@@ -447,54 +695,32 @@ function newUserShell(name) {
     createdAt: Date.now(),
     lastSeen: null,
     onboarded: false,
-    groupId: DEFAULT_GROUP_ID,
     habits: [],
     completions: {},
     skills: [],
     friction: [],
     watchFor: [],
+    priorities: [],
     onboardingSelections: null,
-    activityLog: [],
     weeklyReviews: [],
+    challenges: {},
     settings: {
       appearance: 'system',
-      notifications: { habitReminders: true, dailyCheckin: true, weeklyReview: true, groupActivity: false },
-      privacy: { groupVisibility: true, activityVisibility: true, profileVisibility: true }
+      notifications: { habitReminders: true, challengeReminders: true, weeklyReview: true, dailyCheckin: false },
+      privacy: { dataVisibility: true }
     }
   };
 }
 
-/* Legacy schema (v1): a single 'four_keys_data' key with hardcoded
-   friend1..friend8 profiles, index-based habit logs, and a stake system.
-   We migrate what we reasonably can:
-     - the profile behind the last active session key becomes a real user
-     - other never-onboarded demo friend slots are dropped (they were never
-       real people — fake Friend 1..8 placeholders are explicitly forbidden
-       in the new model)
-     - any friend slot that WAS onboarded (i.e. actually used) is preserved
-       as its own real user so no real history is silently discarded
-     - index-based logs are remapped onto newly-generated stable habit IDs
-     - stake data is discarded entirely (feature removed) */
-/* The original app's hardcoded passkey table. It never lived in saved
-   data (it was a constant in the old app.js), so it can't be read back —
-   but since it's fixed, mirroring it here lets migration hand each
-   recovered profile back its real original code, and correctly figure out
-   which profile was last logged in (the old session key stored the code
-   itself, e.g. "AX7K2M", not the profile's internal key). */
+/* Legacy schema (v1, pre-rebuild): a single 'four_keys_data' key with
+   hardcoded friend1..friend8 profiles, index-based habit logs, and a
+   stake system. We migrate what we reasonably can and discard the rest
+   (stake data, unused demo slots) rather than silently destroying real
+   history. */
 const LEGACY_KEYS = {
-  "AX7K2M": "user", 
-  "BQ4L9P": "friend1", 
-  "CR8N3T": "friend2", 
-  "G1X7D4": "friend3",
-  "EY1J8R": "friend4", 
-  "FW3S2L": "friend5", 
-  "GH2M7X": "friend6", 
-  "JK9P4L": "friend7",
-  "NET1Z3": "friend8",
-  "MN6R1Q": "friend9",
-  "GRAC33": "friend10",
-  "EMM44N": "friend11",
-  "Z2Y8K3": "friend12",
+  "AX7K2M": "user", "BQ4L9P": "friend1", "CR8N3T": "friend2", "DZ5V6H": "friend3",
+  "EY1J8R": "friend4", "FW3S2L": "friend5", "GH2M7X": "friend6", "JK9P4L": "friend7",
+  "MN6R1Q": "friend8"
 };
 const LEGACY_KEYS_REVERSE = Object.fromEntries(Object.entries(LEGACY_KEYS).map(([code, pKey]) => [pKey, code]));
 
@@ -526,7 +752,6 @@ function migrateLegacyIfPresent() {
   Object.keys(legacy.profiles).forEach(pKey => {
     const oldProfile = legacy.profiles[pKey];
     if (!oldProfile) return;
-    // Skip demo friend slots that were never actually used.
     if (/^friend\d+$/.test(pKey) && !oldProfile.onboarded) return;
     if (!oldProfile.onboarded && !(oldProfile.habits && oldProfile.habits.length)) return;
 
@@ -534,33 +759,22 @@ function migrateLegacyIfPresent() {
     user.avatar = oldProfile.avatar || null;
     user.onboarded = !!oldProfile.onboarded;
     user.lastSeen = oldProfile.lastSeen || null;
-    // Hand the profile back its real original access code where we know
-    // it, so a returning user can still log in with the code they had.
     user.accessCode = LEGACY_KEYS_REVERSE[pKey] || genAccessCode();
 
-    // Old habits were plain strings at fixed array indexes. Give each a
-    // stable ID and keep a map from old index -> new ID for log remapping.
     const idxToId = {};
     (oldProfile.habits || []).forEach((habitName, idx) => {
       const h = {
-        id: genId('habit'),
-        name: habitName,
-        description: '',
-        category: '',
-        frequency: { type: 'daily' },
-        createdAt: Date.now(),
-        active: true,
-        reminder: null
+        id: genId('habit'), name: habitName, description: '', category: '',
+        frequency: { type: 'daily' }, createdAt: Date.now(), active: true, reminder: null
       };
       user.habits.push(h);
       idxToId[idx] = h.id;
     });
 
-    // Old logs: "hIdx-YYYY-MM-DD" -> '✓' | '~' | '✕'
-    const statusMap = { '✓': STATUS.DONE, '~': STATUS.ADJUSTED, '✕': STATUS.MISSED };
+    const statusMap = { '\u2713': STATUS.DONE, '~': STATUS.ADJUSTED, '\u2715': STATUS.MISSED };
     Object.keys(oldProfile.logs || {}).forEach(key => {
       const parts = key.split('-');
-      if (parts.length !== 4) return; // drop unrecognized/very old formats safely
+      if (parts.length !== 4) return;
       const [hIdxStr, y, m, d] = parts;
       const habitId = idxToId[Number(hIdxStr)];
       if (!habitId) return;
@@ -576,8 +790,6 @@ function migrateLegacyIfPresent() {
       });
     });
 
-    // Old "friction" mixed real misses with seeded watch-for strings
-    // (seed:true). Only real misses become friction history.
     (oldProfile.friction || []).forEach(f => {
       if (f && f.seed) {
         if (f.reason) user.watchFor.push(f.reason);
@@ -591,8 +803,9 @@ function migrateLegacyIfPresent() {
       });
     });
 
+    // Discard: stake settings/history, group membership. No equivalent —
+    // and none needed, per the current product direction.
     state.users[user.id] = user;
-    state.groups[DEFAULT_GROUP_ID].members.push(user.id);
     migratedAny = true;
 
     if (pKey === lastSessionProfileKey || (!firstMigratedUserId && user.onboarded)) {
@@ -608,13 +821,42 @@ function migrateLegacyIfPresent() {
   return migratedAny;
 }
 
-function getUser() {
-  return state.users[state.session.activeUserId] || null;
+// v2 -> v3 in-place migration: drops the removed `groups` collection and
+// each user's group-only fields (groupId, activityLog, old onboarding
+// impact ratings, the old 5-item priority cap) without touching anything
+// else. Existing habits/completions/skills/friction/IDs are untouched.
+function migrateV2ToV3IfNeeded() {
+  if (!state || state.version >= 3) return false;
+  delete state.groups;
+  Object.values(state.users || {}).forEach(u => {
+    delete u.groupId;
+    delete u.activityLog;
+    if (!Array.isArray(u.priorities)) {
+      const sel = u.onboardingSelections;
+      u.priorities = (sel && Array.isArray(sel.priorities))
+        ? sel.priorities.map(key => {
+          const [catId, ...rest] = String(key).split('::');
+          return { key, catId, label: rest.join('::'), isTop: true };
+        })
+        : [];
+    }
+    if (u.onboardingSelections) delete u.onboardingSelections.impact;
+    if (!u.challenges) u.challenges = {};
+    if (u.settings && u.settings.notifications) {
+      delete u.settings.notifications.groupActivity;
+      if (u.settings.notifications.challengeReminders === undefined) u.settings.notifications.challengeReminders = true;
+    }
+    if (u.settings) {
+      u.settings.privacy = { dataVisibility: true };
+    }
+  });
+  state.version = 3;
+  saveData();
+  return true;
 }
 
-function getGroup(user) {
-  const gid = (user && user.groupId) || DEFAULT_GROUP_ID;
-  return state.groups[gid] || state.groups[DEFAULT_GROUP_ID];
+function getUser() {
+  return state.users[state.session.activeUserId] || null;
 }
 
 function touchLastSeen() {
@@ -626,7 +868,7 @@ function touchLastSeen() {
 
 /* =========================================================================
    HABIT DUE / CONSISTENCY / STREAK — single source of truth.
-   Today, Progress, Group, and Habit Detail all call these same functions
+   Today, Habits, Progress, and habit detail all call these same functions
    so the numbers never disagree with each other.
    ========================================================================= */
 function isHabitDue(habit, date) {
@@ -648,8 +890,6 @@ function setCompletion(user, habitId, dStr, status) {
   else delete user.completions[key];
 }
 
-// Iterates the due dates for a single habit between its creation date and
-// `to` (default: today), never counting future dates.
 function habitDueDatesInRange(habit, to) {
   const dates = [];
   const start = new Date(habit.createdAt);
@@ -667,9 +907,6 @@ function habitDueDatesInRange(habit, to) {
   return dates;
 }
 
-// Central consistency calculator.
-// opts: { habitId?: string, from?: Date, to?: Date }
-// Returns null when there's not enough data yet (no expected opportunities).
 function calcConsistency(user, opts) {
   opts = opts || {};
   const habits = opts.habitId
@@ -686,8 +923,6 @@ function calcConsistency(user, opts) {
     dueDates.forEach(d => {
       const dStr = dateKey(d.getFullYear(), d.getMonth() + 1, d.getDate());
       const status = getCompletion(user, habit.id, dStr);
-      // Only count a day as an "opportunity" once it has actually arrived
-      // (today counts) so future due-dates never drag consistency down.
       expected++;
       if (status === STATUS.DONE) done++;
       else if (status === STATUS.ADJUSTED) adjusted++;
@@ -700,9 +935,6 @@ function calcConsistency(user, opts) {
   return { pct, expected, done, adjusted, missed };
 }
 
-// Per-habit current streak: walk backward from today; today is forgiven if
-// not yet logged (so you don't lose your streak before you've had a chance
-// to check in). Stops the moment a past due day was missed or left blank.
 function calcCurrentStreak(user, habitId) {
   const habit = user.habits.find(h => h.id === habitId);
   if (!habit) return 0;
@@ -731,7 +963,6 @@ function calcCurrentStreak(user, habitId) {
   return streak;
 }
 
-// Longest streak for a single habit across its full history.
 function calcLongestStreak(user, habitId) {
   const habit = user.habits.find(h => h.id === habitId);
   if (!habit) return 0;
@@ -750,9 +981,6 @@ function calcLongestStreak(user, habitId) {
   return longest;
 }
 
-// Overall (all-habits) streak: a calendar day counts as "clean" if every
-// habit due that day was completed (done/adjusted) and none were missed.
-// A day with zero due habits doesn't break or extend the streak.
 function overallCleanDaySet(user) {
   if (user.habits.length === 0) return new Set();
   const earliest = user.habits.reduce((min, h) => Math.min(min, h.createdAt), Date.now());
@@ -799,10 +1027,6 @@ function calcOverallStreaks(user) {
   return { current, longest };
 }
 
-function isOnline(lastSeen) {
-  return !!lastSeen && (Date.now() - lastSeen) <= ONLINE_THRESHOLD_MS;
-}
-
 function formatLastSeen(lastSeen) {
   if (!lastSeen) return 'Never';
   const diffMs = Date.now() - lastSeen;
@@ -819,33 +1043,45 @@ function formatLastSeen(lastSeen) {
 
 /* =========================================================================
    INIT / SESSION / ACCESS SCREEN
-   Restores the original Access Code idea (a short code that gets you into
-   a profile) on top of the real per-user architecture: every profile has
-   its own generated code instead of a hardcoded Friend1..8 table. This is
-   still local-first, not real auth — no fake backend, no fake cross-device
-   sync — but it gives the "type in your code" flow back, plus a quick-pick
-   list of profiles already used on this device. Real backend auth can
-   slot in later behind DataStore/getUser()/saveData().
+   Local-first: always shows something instantly from the local cache. If
+   Supabase is configured, "I already have an account" additionally tries
+   a real cross-device code redemption before falling back to the local
+   profile list.
    ========================================================================= */
+function hideSplash() {
+  const splash = document.getElementById('app-splash');
+  if (!splash) return;
+  splash.classList.add('splash-hide');
+  setTimeout(() => splash.remove(), 450);
+}
+
 function init() {
   loadData();
   migrateLegacyIfPresent();
-  ensureDefaultGroup();
+  migrateV2ToV3IfNeeded();
   backfillAccessCodes();
   setupEventListeners();
   setupCrossTabSync();
   applyAppearance();
+  registerServiceWorker();
 
   const sessionUserId = DataStore.getSessionUserId();
 
-  if (sessionUserId && state.users[sessionUserId]) {
-    state.session.activeUserId = sessionUserId;
-    afterLogin();
-  } else if (state.session.activeUserId && state.users[state.session.activeUserId]) {
-    afterLogin();
-  } else {
-    renderAccessScreen();
-  }
+  const proceed = () => {
+    if (sessionUserId && state.users[sessionUserId]) {
+      state.session.activeUserId = sessionUserId;
+      afterLogin();
+    } else if (state.session.activeUserId && state.users[state.session.activeUserId]) {
+      afterLogin();
+    } else {
+      renderAccessScreen();
+    }
+    hideSplash();
+  };
+
+  // A short, deliberate minimum splash duration so the branded startup
+  // moment reads as intentional rather than a flash of a favicon.
+  setTimeout(proceed, 550);
 }
 
 function afterLogin() {
@@ -854,14 +1090,9 @@ function afterLogin() {
   u.lastSeen = Date.now();
   DataStore.setSessionUserId(u.id);
   saveData();
-  startPresenceHeartbeat();
   showApp();
 }
 
-// mode: 'picker' (default) shows existing profiles + code entry + New
-// Profile. isSwitch just changes the heading copy; the picker itself is
-// identical either way — Switch must never skip straight to profile
-// creation when profiles already exist.
 function renderAccessScreen(isSwitch) {
   document.getElementById('app-screen').classList.add('hidden');
   document.getElementById('onboarding-screen').classList.add('hidden');
@@ -871,6 +1102,9 @@ function renderAccessScreen(isSwitch) {
 
   const users = Object.values(state.users).sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
   const card = document.getElementById('access-card');
+  const cloudNote = isSupabaseConfigured()
+    ? "Your access code works on any device."
+    : "This device only, for now \u2014 cross-device sync needs a connected account (see Profile).";
 
   if (users.length === 0) {
     renderCreateProfileForm(card, true);
@@ -879,8 +1113,8 @@ function renderAccessScreen(isSwitch) {
 
   card.innerHTML = `
     <p class="eyebrow">OnTrack</p>
-    <h1 class="auth-title">${isSwitch ? 'Switch profile' : "Who's this?"}</h1>
-    <p class="auth-sub">Choose a profile on this device, or enter an access code.</p>
+    <h1 class="auth-title">${isSwitch ? 'Switch profile' : "Welcome back"}</h1>
+    <p class="auth-sub">Choose a profile on this device, or use your access code.</p>
     <div class="profile-picker-list">
       ${users.map(u => `
         <button type="button" class="profile-pick-btn" data-uid="${u.id}">
@@ -891,10 +1125,11 @@ function renderAccessScreen(isSwitch) {
     </div>
 
     <div class="access-code-block">
-      <p class="input-label">Have an access code?</p>
-      <input type="text" id="access-code-input" class="input-field access-code-field" placeholder="XXXXXX" maxlength="6" autocomplete="off">
+      <p class="input-label">I already have an account</p>
+      <input type="text" id="access-code-input" class="input-field access-code-field" placeholder="OT-XXXX-XXXX" maxlength="11" autocomplete="off">
       <button type="button" class="btn-secondary full-width mt-10" id="access-code-submit">Continue with code</button>
-      <p id="access-code-error" class="error-msg hidden">That access code doesn't match a profile on this device.</p>
+      <p id="access-code-error" class="error-msg hidden">That access code didn't match an account.</p>
+      <p class="hint-text mt-8">${cloudNote}</p>
     </div>
 
     <button type="button" class="btn-primary mt-14" id="new-profile-btn">+ New profile</button>
@@ -907,16 +1142,59 @@ function renderAccessScreen(isSwitch) {
   });
   const newBtn = document.getElementById('new-profile-btn');
   if (newBtn) newBtn.addEventListener('click', () => renderCreateProfileForm(card, false));
+  wireAccessCodeSubmit();
+}
 
+async function wireAccessCodeSubmit() {
   const codeInput = document.getElementById('access-code-input');
-  const submitCode = () => {
-    const match = findUserByAccessCode(codeInput.value);
-    if (!match) { document.getElementById('access-code-error').classList.remove('hidden'); return; }
-    document.getElementById('access-code-error').classList.add('hidden');
-    state.session.activeUserId = match.id;
+  const submitBtn = document.getElementById('access-code-submit');
+  if (!codeInput || !submitBtn) return;
+
+  const submitCode = async () => {
+    const raw = codeInput.value.trim();
+    const errorEl = document.getElementById('access-code-error');
+    errorEl.classList.add('hidden');
+
+    // Local device already has this profile? Fastest path, works offline.
+    const localMatch = findUserByAccessCode(raw);
+    if (localMatch) {
+      state.session.activeUserId = localMatch.id;
+      afterLogin();
+      return;
+    }
+
+    if (!isSupabaseConfigured()) {
+      errorEl.textContent = "That access code didn't match a profile on this device.";
+      errorEl.classList.remove('hidden');
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Checking\u2026';
+    const result = await SupabaseAdapter.redeemAccessCode(raw);
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Continue with code';
+
+    if (!result.ok) {
+      errorEl.textContent = result.reason === 'rate_limited'
+        ? 'Too many attempts \u2014 try again in a minute.'
+        : "That access code didn't match an account.";
+      errorEl.classList.remove('hidden');
+      return;
+    }
+
+    const cloudUser = await SupabaseAdapter.fetchProfileState(result.userId);
+    if (!cloudUser) {
+      errorEl.textContent = 'Found your account, but could not load your data. Try again.';
+      errorEl.classList.remove('hidden');
+      return;
+    }
+    state.users[cloudUser.id] = cloudUser;
+    state.session.activeUserId = cloudUser.id;
     afterLogin();
   };
-  document.getElementById('access-code-submit').addEventListener('click', submitCode);
+
+  submitBtn.addEventListener('click', submitCode);
   codeInput.addEventListener('input', () => { codeInput.value = codeInput.value.toUpperCase(); });
   codeInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') submitCode(); });
 }
@@ -924,19 +1202,19 @@ function renderAccessScreen(isSwitch) {
 function renderCreateProfileForm(card, isFirstEver) {
   card.innerHTML = `
     <p class="eyebrow">${isFirstEver ? 'Welcome' : 'New profile'}</p>
-    <h1 class="auth-title">${isFirstEver ? 'Set up OnTrack' : 'Create a profile'}</h1>
+    <h1 class="auth-title">${isFirstEver ? 'Build the life you\u2019re working toward' : 'Create a profile'}</h1>
     <p class="auth-sub">${isFirstEver
-      ? 'OnTrack lives only in this browser. Give this profile a name to get started.'
-      : 'Everyone using this browser gets their own private profile in the same group.'}</p>
+      ? 'OnTrack helps you understand what matters, spot what\u2019s getting in the way, and actually do something about it. Give your profile a name to start.'
+      : 'Everyone using this browser gets their own separate, private profile.'}</p>
     <input type="text" id="new-profile-name" class="input-field" style="text-align:left;letter-spacing:normal;" placeholder="Your name" autocomplete="off">
     <button id="create-profile-btn" type="button" class="btn-primary">Continue</button>
     <p id="profile-error" class="error-msg hidden">Enter a name to continue.</p>
     ${!isFirstEver ? '<button type="button" class="btn-secondary full-width mt-10" id="back-to-picker-btn">Back</button>' : ''}
     ${isFirstEver ? `<div class="access-code-block">
-      <p class="input-label">Already have an access code from before?</p>
-      <input type="text" id="access-code-input" class="input-field access-code-field" placeholder="XXXXXX" maxlength="6" autocomplete="off">
+      <p class="input-label">I already have an account</p>
+      <input type="text" id="access-code-input" class="input-field access-code-field" placeholder="OT-XXXX-XXXX" maxlength="11" autocomplete="off">
       <button type="button" class="btn-secondary full-width mt-10" id="access-code-submit">Continue with code</button>
-      <p id="access-code-error" class="error-msg hidden">That access code doesn't match a profile on this device.</p>
+      <p id="access-code-error" class="error-msg hidden">That access code didn't match an account.</p>
     </div>` : ''}
   `;
   const submit = () => {
@@ -948,30 +1226,21 @@ function renderCreateProfileForm(card, isFirstEver) {
   document.getElementById('new-profile-name').addEventListener('keyup', (e) => { if (e.key === 'Enter') submit(); });
   const backBtn = document.getElementById('back-to-picker-btn');
   if (backBtn) backBtn.addEventListener('click', () => renderAccessScreen(false));
-
-  const codeInput = document.getElementById('access-code-input');
-  if (codeInput) {
-    const submitCode = () => {
-      const match = findUserByAccessCode(codeInput.value);
-      if (!match) { document.getElementById('access-code-error').classList.remove('hidden'); return; }
-      document.getElementById('access-code-error').classList.add('hidden');
-      state.session.activeUserId = match.id;
-      afterLogin();
-    };
-    document.getElementById('access-code-submit').addEventListener('click', submitCode);
-    codeInput.addEventListener('input', () => { codeInput.value = codeInput.value.toUpperCase(); });
-    codeInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') submitCode(); });
-  }
+  wireAccessCodeSubmit();
 }
 
-function createProfile(name) {
-  const user = newUserShell(name);
-  user.accessCode = genAccessCode();
-  state.users[user.id] = user;
-  ensureDefaultGroup();
-  if (!state.groups[DEFAULT_GROUP_ID].members.includes(user.id)) {
-    state.groups[DEFAULT_GROUP_ID].members.push(user.id);
+async function createProfile(name) {
+  let user;
+  if (isSupabaseConfigured()) {
+    user = await SupabaseAdapter.createCloudProfile(name);
   }
+  if (!user) {
+    // Local-only profile. Still gets a real access code; it just won't be
+    // reachable from another device until Supabase is configured.
+    user = newUserShell(name);
+    user.accessCode = genAccessCode();
+  }
+  state.users[user.id] = user;
   state.session.activeUserId = user.id;
   saveData();
   renderAccessCodeReveal(user);
@@ -979,10 +1248,13 @@ function createProfile(name) {
 
 function renderAccessCodeReveal(user) {
   const card = document.getElementById('access-card');
+  const cloudLine = isSupabaseConfigured()
+    ? "This code works from any device."
+    : "This device only, for now. Connect a Supabase account in Profile to use it elsewhere.";
   card.innerHTML = `
-    <p class="eyebrow">Profile created</p>
+    <p class="eyebrow">Account created</p>
     <h1 class="auth-title">Save your access code</h1>
-    <p class="auth-sub">This is how you'll get back into this exact profile on this or another device later. OnTrack can't recover it for you if it's lost.</p>
+    <p class="auth-sub">This is how you'll get back into your account later. ${cloudLine} OnTrack can't recover it for you if it's lost.</p>
     <div class="access-code-reveal">${escapeHtml(user.accessCode)}</div>
     <button type="button" class="btn-primary mt-14" id="access-code-continue">I've saved it \u2014 continue</button>
   `;
@@ -991,30 +1263,11 @@ function renderAccessCodeReveal(user) {
 
 function switchProfile() {
   touchLastSeen();
-  stopPresenceHeartbeat();
   DataStore.clearSession();
   state.session.activeUserId = null;
   document.getElementById('app-screen').classList.add('hidden');
   renderAccessScreen(true);
 }
-
-/* ---------- Presence + cross-tab sync (same-browser only) ---------- */
-let presenceInterval = null;
-function startPresenceHeartbeat() {
-  stopPresenceHeartbeat();
-  presenceInterval = setInterval(() => {
-    touchLastSeen();
-    if (currentTab === 'group') renderGroup();
-  }, 30000);
-  document.addEventListener('visibilitychange', handleVisibilityChange);
-  window.addEventListener('beforeunload', touchLastSeen);
-}
-function stopPresenceHeartbeat() {
-  if (presenceInterval) { clearInterval(presenceInterval); presenceInterval = null; }
-  document.removeEventListener('visibilitychange', handleVisibilityChange);
-  window.removeEventListener('beforeunload', touchLastSeen);
-}
-function handleVisibilityChange() { if (!document.hidden) touchLastSeen(); }
 
 function setupCrossTabSync() {
   window.addEventListener('storage', (e) => {
@@ -1026,9 +1279,14 @@ function setupCrossTabSync() {
       console.error('Could not read update from another tab.', err);
       return;
     }
-    if (currentTab === 'group') renderGroup();
     if (currentTab === 'today') renderToday();
   });
+}
+
+function registerServiceWorker() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => { /* PWA offline shell is optional */ });
+  }
 }
 
 /* ---------- Appearance ---------- */
@@ -1043,15 +1301,14 @@ function applyAppearance() {
 }
 
 /* =========================================================================
-   ONBOARDING WIZARD
-   Step 1: pick problems across categories.
-   Step 2: narrow to top 3-5 priorities.
-   Step 3: rate how much each priority affects them (Low/Med/High).
-   Step 4: what usually gets in the way (feeds the friction system).
-   Step 5: generated system summary.
+   ONBOARDING WIZARD (4 steps)
+   1. What are you working on?          -- pick across categories
+   2. What matters most right now?      -- no cap; star a few as top
+   3. What's getting in your way?       -- contextual to categories picked
+   4. Your starting system is ready.
    ========================================================================= */
 function startOnboarding() {
-  onboard = { step: 1, problems: [], priorities: [], impact: {}, blockers: [] };
+  onboard = { step: 1, problems: [], priorities: [], blockers: [] };
   document.getElementById('app-screen').classList.add('hidden');
   document.getElementById('access-screen').classList.add('hidden');
   const screen = document.getElementById('onboarding-screen');
@@ -1062,7 +1319,7 @@ function startOnboarding() {
 
 function onboardProgressDots() {
   let dots = '<div class="onboard-progress">';
-  for (let i = 1; i <= 5; i++) dots += `<span class="onboard-dot ${i <= onboard.step ? 'active' : ''}"></span>`;
+  for (let i = 1; i <= 4; i++) dots += `<span class="onboard-dot ${i <= onboard.step ? 'active' : ''}"></span>`;
   return dots + '</div>';
 }
 
@@ -1071,8 +1328,7 @@ function renderOnboardStep() {
   if (onboard.step === 1) renderOnboardStep1(card);
   else if (onboard.step === 2) renderOnboardStep2(card);
   else if (onboard.step === 3) renderOnboardStep3(card);
-  else if (onboard.step === 4) renderOnboardStep4(card);
-  else renderOnboardStep5(card);
+  else renderOnboardStep4(card);
 }
 
 function problemKey(catId, label) { return `${catId}::${label}`; }
@@ -1090,7 +1346,7 @@ function renderOnboardStep1(card) {
             <span>${escapeHtml(cat.title)}${cat.private ? ' <span class="private-badge">Private</span>' : ''}</span>
             <span class="onboard-category-count" id="count-${cat.id}"></span>
           </button>
-          ${cat.private ? `<p class="hint-text onboard-private-note">${escapeHtml(cat.note)} This category is never shown to your Group.</p>` : ''}
+          ${cat.private ? `<p class="hint-text onboard-private-note">${escapeHtml(cat.note)}</p>` : ''}
           <div class="onboard-items hidden" id="items-${cat.id}">
             ${cat.items.map(item => `
               <label class="onboard-item"><input type="checkbox" data-cat="${cat.id}" value="${escapeHtml(item)}"> ${escapeHtml(item)}</label>
@@ -1104,11 +1360,11 @@ function renderOnboardStep1(card) {
 
   card.querySelectorAll('.onboard-category-head').forEach(head => {
     head.addEventListener('click', () => {
-      const el = document.getElementById(`items-${head.dataset.cat}`);
-      el.classList.toggle('hidden');
+      document.getElementById(`items-${head.dataset.cat}`).classList.toggle('hidden');
     });
   });
   card.querySelectorAll('.onboard-items input[type=checkbox]').forEach(cb => {
+    if (onboard.problems.find(p => p.key === problemKey(cb.dataset.cat, cb.value))) cb.checked = true;
     cb.addEventListener('change', () => {
       const key = problemKey(cb.dataset.cat, cb.value);
       if (cb.checked) {
@@ -1122,7 +1378,16 @@ function renderOnboardStep1(card) {
       document.getElementById('onboard-next-1').disabled = onboard.problems.length === 0;
     });
   });
-  document.getElementById('onboard-next-1').addEventListener('click', () => { onboard.step = 2; renderOnboardStep(); });
+  updateOnboardCounts();
+  document.getElementById('onboard-next-1').disabled = onboard.problems.length === 0;
+  document.getElementById('onboard-next-1').addEventListener('click', () => {
+    // Anything unstarred yet defaults into step 2 as "relevant" (not top).
+    if (onboard.priorities.length === 0) {
+      onboard.priorities = onboard.problems.map(p => ({ ...p, isTop: false }));
+    }
+    onboard.step = 2;
+    renderOnboardStep();
+  });
 }
 
 function updateOnboardCounts() {
@@ -1134,36 +1399,45 @@ function updateOnboardCounts() {
 }
 
 function renderOnboardStep2(card) {
-  const MAX = 5;
+  // Keep priorities in sync with whatever is (still) selected in step 1.
+  onboard.priorities = onboard.problems.map(p => {
+    const existing = onboard.priorities.find(pr => pr.key === p.key);
+    return { ...p, isTop: existing ? existing.isTop : false };
+  });
+
   card.innerHTML = `
     ${onboardProgressDots()}
     <p class="eyebrow">Step 2</p>
     <h2>What matters most right now?</h2>
-    <p class="onboard-sub">Choose 3&ndash;5 priorities from what you picked. This keeps your system focused instead of overwhelming.</p>
-    <div class="onboard-items" id="priority-items">
-      ${onboard.problems.map(p => `
-        <label class="onboard-item"><input type="checkbox" value="${escapeHtml(p.key)}" ${onboard.priorities.includes(p.key) ? 'checked' : ''}> ${escapeHtml(p.label)}</label>
+    <p class="onboard-sub">Everything you picked stays relevant. Star the ones you want to treat as top priorities \u2014 those are what OnTrack will build your first system and challenges around.</p>
+    <div class="onboard-priority-list" id="priority-list">
+      ${onboard.priorities.map(p => `
+        <div class="priority-row ${p.isTop ? 'is-top' : ''}" data-key="${escapeHtml(p.key)}">
+          <button type="button" class="priority-star" data-key="${escapeHtml(p.key)}" title="Mark as top priority">${p.isTop ? '\u2605' : '\u2606'}</button>
+          <span class="priority-label">${escapeHtml(p.label)}</span>
+          <span class="priority-cat-tag">${escapeHtml(findCategory(p.catId) ? findCategory(p.catId).title : '')}</span>
+        </div>
       `).join('')}
     </div>
     <p class="hint-text" id="priority-count-note"></p>
     <div class="flex-gap-8 mt-14">
       <button type="button" class="btn-secondary" id="onboard-back-2">Back</button>
-      <button type="button" class="btn-primary" id="onboard-next-2" disabled>Continue</button>
+      <button type="button" class="btn-primary" id="onboard-next-2">Continue</button>
     </div>
   `;
   const updateNote = () => {
-    const n = onboard.priorities.length;
-    document.getElementById('priority-count-note').textContent = `${n} selected (pick ${MAX - n > 0 ? 'up to ' + (MAX - n) + ' more' : 'no more \u2014 limit reached'})`;
-    document.getElementById('onboard-next-2').disabled = n < 3;
+    const n = onboard.priorities.filter(p => p.isTop).length;
+    document.getElementById('priority-count-note').textContent = n > 0
+      ? `${n} top ${n === 1 ? 'priority' : 'priorities'} \u00b7 ${onboard.priorities.length} relevant areas total`
+      : `No top priorities starred yet \u2014 that's okay, but starring a few helps OnTrack focus your first system.`;
   };
-  card.querySelectorAll('#priority-items input').forEach(cb => {
-    cb.addEventListener('change', () => {
-      if (cb.checked) {
-        if (onboard.priorities.length >= MAX) { cb.checked = false; return; }
-        onboard.priorities.push(cb.value);
-      } else {
-        onboard.priorities = onboard.priorities.filter(k => k !== cb.value);
-      }
+  card.querySelectorAll('.priority-star').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const p = onboard.priorities.find(pr => pr.key === btn.dataset.key);
+      if (!p) return;
+      p.isTop = !p.isTop;
+      btn.textContent = p.isTop ? '\u2605' : '\u2606';
+      btn.closest('.priority-row').classList.toggle('is-top', p.isTop);
       updateNote();
     });
   });
@@ -1173,93 +1447,57 @@ function renderOnboardStep2(card) {
 }
 
 function renderOnboardStep3(card) {
+  const touchedCategories = [...new Set(onboard.problems.map(p => p.catId))];
+  const options = [...new Set(touchedCategories.flatMap(catId => CATEGORY_BLOCKERS[catId] || []))];
+
   card.innerHTML = `
     ${onboardProgressDots()}
     <p class="eyebrow">Step 3</p>
-    <h2>How much is this affecting you right now?</h2>
-    <p class="onboard-sub">Rate each priority.</p>
-    <div class="onboard-impact-list">
-      ${onboard.priorities.map(key => {
-        const p = onboard.problems.find(pp => pp.key === key);
-        return `
-        <div class="impact-row">
-          <span class="impact-label">${escapeHtml(p ? p.label : key)}</span>
-          <div class="segmented impact-segmented" data-key="${escapeHtml(key)}">
-            <button type="button" class="segmented-btn" data-value="Low">Low</button>
-            <button type="button" class="segmented-btn" data-value="Medium">Medium</button>
-            <button type="button" class="segmented-btn" data-value="High">High</button>
-          </div>
-        </div>`;
-      }).join('')}
-    </div>
-    <div class="flex-gap-8 mt-14">
-      <button type="button" class="btn-secondary" id="onboard-back-3">Back</button>
-      <button type="button" class="btn-primary" id="onboard-next-3">Continue</button>
-    </div>
-  `;
-  card.querySelectorAll('.impact-segmented').forEach(seg => {
-    const key = seg.dataset.key;
-    seg.querySelectorAll('.segmented-btn').forEach(btn => {
-      if (onboard.impact[key] === btn.dataset.value) btn.classList.add('active');
-      btn.addEventListener('click', () => {
-        onboard.impact[key] = btn.dataset.value;
-        seg.querySelectorAll('.segmented-btn').forEach(b => b.classList.toggle('active', b === btn));
-      });
-    });
-  });
-  document.getElementById('onboard-back-3').addEventListener('click', () => { onboard.step = 2; renderOnboardStep(); });
-  document.getElementById('onboard-next-3').addEventListener('click', () => { onboard.step = 4; renderOnboardStep(); });
-}
-
-function renderOnboardStep4(card) {
-  card.innerHTML = `
-    ${onboardProgressDots()}
-    <p class="eyebrow">Step 4</p>
-    <h2>What usually gets in your way?</h2>
-    <p class="onboard-sub">Pick whatever tends to happen. This feeds your friction system.</p>
-    <div class="onboard-items">
-      ${FRICTION_BLOCKERS.map(b => `
+    <h2>What's getting in the way right now?</h2>
+    <p class="onboard-sub">Based on what you picked. This feeds your friction system, so OnTrack can tell you why things keep slipping \u2014 not just that they did.</p>
+    <div class="onboard-items" id="blocker-items">
+      ${options.map(b => `
         <label class="onboard-item"><input type="checkbox" value="${escapeHtml(b)}" ${onboard.blockers.includes(b) ? 'checked' : ''}> ${escapeHtml(b)}</label>
       `).join('')}
     </div>
     <div class="flex-gap-8 mt-14">
-      <button type="button" class="btn-secondary" id="onboard-back-4">Back</button>
-      <button type="button" class="btn-primary" id="onboard-next-4">Generate my system</button>
+      <button type="button" class="btn-secondary" id="onboard-back-3">Back</button>
+      <button type="button" class="btn-primary" id="onboard-next-3">Generate my system</button>
     </div>
   `;
-  card.querySelectorAll('.onboard-items input').forEach(cb => {
+  card.querySelectorAll('#blocker-items input').forEach(cb => {
     cb.addEventListener('change', () => {
       if (cb.checked) onboard.blockers.push(cb.value);
       else onboard.blockers = onboard.blockers.filter(b => b !== cb.value);
     });
   });
-  document.getElementById('onboard-back-4').addEventListener('click', () => { onboard.step = 3; renderOnboardStep(); });
-  document.getElementById('onboard-next-4').addEventListener('click', () => {
-    onboard.step = 5;
+  document.getElementById('onboard-back-3').addEventListener('click', () => { onboard.step = 2; renderOnboardStep(); });
+  document.getElementById('onboard-next-3').addEventListener('click', () => {
     generateSystemFromOnboarding();
+    onboard.step = 4;
     renderOnboardStep();
   });
 }
 
-function renderOnboardStep5(card) {
+function renderOnboardStep4(card) {
   const u = getUser();
   card.innerHTML = `
     ${onboardProgressDots()}
     <p class="eyebrow">Ready</p>
     <h2>Your starting system is ready.</h2>
-    <p class="onboard-sub">Based on what you picked, OnTrack generated a focused set of habits, skills, and things to watch for. Edit or remove anything &mdash; this is just a starting point.</p>
+    <p class="onboard-sub">Based on your top priorities, OnTrack generated a focused set of habits, skills, and things to watch for. Edit or remove anything \u2014 this is just a starting point.</p>
     <div class="onboard-summary">
       <div class="onboard-summary-block">
         <p class="input-label">Habits</p>
-        <ul>${u.habits.map(h => `<li>${escapeHtml(h.name)}</li>`).join('')}</ul>
+        <ul>${u.habits.map(h => `<li>${escapeHtml(h.name)}</li>`).join('') || '<li class="empty-note-inline">None yet \u2014 add your own on the Habits page.</li>'}</ul>
       </div>
       <div class="onboard-summary-block">
-        <p class="input-label">Skills</p>
-        <ul>${u.skills.map(s => `<li>${escapeHtml(s.name)}</li>`).join('')}</ul>
+        <p class="input-label">Skills I'm Building</p>
+        <ul>${u.skills.map(s => `<li>${escapeHtml(s.name)}</li>`).join('') || '<li class="empty-note-inline">None yet.</li>'}</ul>
       </div>
       <div class="onboard-summary-block">
         <p class="input-label">Things to watch for</p>
-        <ul>${u.watchFor.map(w => `<li>${escapeHtml(w)}</li>`).join('')}</ul>
+        <ul>${u.watchFor.map(w => `<li>${escapeHtml(w)}</li>`).join('') || '<li class="empty-note-inline">None yet.</li>'}</ul>
       </div>
     </div>
     <button type="button" class="btn-primary mt-14" id="onboard-finish">Go to Today</button>
@@ -1270,9 +1508,10 @@ function renderOnboardStep5(card) {
   });
 }
 
-// Priorities determine which categories seed content (capped so the user
-// doesn't get "homework"): up to 2 habits + 1 skill + up to 2 watch-fors
-// per touched category, overall habit count capped at 8.
+// Top priorities determine which categories seed content (capped so the
+// user doesn't get "homework"): up to 2 habits + 1 skill + up to 2
+// watch-fors per touched category, overall habit count capped at 8. If
+// nothing was starred as a top priority, every selected area contributes.
 function generateSystemFromOnboarding() {
   const u = getUser();
   if (!u) return;
@@ -1281,8 +1520,10 @@ function generateSystemFromOnboarding() {
   u.skills = [];
   u.watchFor = [];
   u.friction = [];
+  u.priorities = onboard.priorities.map(p => ({ key: p.key, catId: p.catId, label: p.label, isTop: !!p.isTop }));
 
-  const touchedCategories = [...new Set(onboard.priorities.map(k => k.split('::')[0]))];
+  const topOnes = u.priorities.filter(p => p.isTop);
+  const touchedCategories = [...new Set((topOnes.length ? topOnes : u.priorities).map(p => p.catId))];
   const seenHabitNames = new Set();
   const seenSkillNames = new Set();
 
@@ -1307,8 +1548,6 @@ function generateSystemFromOnboarding() {
 
   u.onboardingSelections = {
     problems: onboard.problems.map(p => p.key),
-    priorities: onboard.priorities,
-    impact: onboard.impact,
     blockers: onboard.blockers,
     completedAt: Date.now()
   };
@@ -1319,6 +1558,8 @@ function generateSystemFromOnboarding() {
 
 /* =========================================================================
    APP SHELL / TAB SWITCHING
+   Four top-level destinations: Today, Habits (with a Skills sub-view),
+   Progress (with Friction + Weekly Review folded in), Profile.
    ========================================================================= */
 function showApp() {
   const u = getUser();
@@ -1342,7 +1583,7 @@ function showApp() {
   switchTab('today');
 }
 
-const ALL_TABS = ['today', 'habits', 'skills', 'progress', 'friction', 'group', 'settings'];
+const ALL_TABS = ['today', 'habits', 'progress', 'profile'];
 
 function switchTab(tab, clickedBtn) {
   currentTab = tab;
@@ -1355,17 +1596,75 @@ function switchTab(tab, clickedBtn) {
   document.querySelectorAll('.mnav-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
 
   if (tab === 'today') renderToday();
-  if (tab === 'habits') renderHabits();
-  if (tab === 'skills') renderSkills();
-  if (tab === 'progress') renderProgress();
-  if (tab === 'friction') renderFriction();
-  if (tab === 'group') renderGroup();
-  if (tab === 'settings') populateSettingsForm();
+  if (tab === 'habits') renderHabitsTab();
+  if (tab === 'progress') renderProgressTab();
+  if (tab === 'profile') populateProfileForm();
 }
 
 /* =========================================================================
-   TODAY DASHBOARD
+   TODAY — the center of the product.
+   A. compact greeting/context
+   B. Today's Challenge (derived from priorities/habits/friction)
+   C. Today's actions (condensed check-off list, not the full matrix)
+   D. a short progress snapshot
+   E. secondary quick actions
    ========================================================================= */
+
+// Picks (or reuses) a meaningful challenge for today, derived from the
+// user's own data rather than anything random:
+//  1. If today's challenge was already generated, reuse it (and reflect
+//     completion state live).
+//  2. Prefer a habit tied to a top priority that hasn't been done today
+//     and has recent friction against it (the thing actually slipping).
+//  3. Otherwise, a habit tied to any top priority not yet done today.
+//  4. Otherwise, the least-consistent active habit not yet done today.
+//  5. If literally everything today is already done, congratulate instead.
+function getOrCreateTodayChallenge(u) {
+  const dStr = todayKey();
+  u.challenges = u.challenges || {};
+  const existing = u.challenges[dStr];
+  if (existing) {
+    if (existing.habitId) {
+      const status = getCompletion(u, existing.habitId, dStr);
+      existing.completed = status === STATUS.DONE || status === STATUS.ADJUSTED;
+    }
+    return existing;
+  }
+
+  const dueToday = u.habits.filter(h => h.active !== false && isHabitDue(h, new Date()));
+  const notDoneToday = dueToday.filter(h => {
+    const s = getCompletion(u, h.id, dStr);
+    return s !== STATUS.DONE && s !== STATUS.ADJUSTED;
+  });
+
+  if (notDoneToday.length === 0) {
+    if (dueToday.length === 0) return null;
+    return { habitId: null, text: "Everything on today's list is already done. Nice.", completed: true, isCelebration: true };
+  }
+
+  const topCatIds = new Set((u.priorities || []).filter(p => p.isTop).map(p => p.catId));
+  const recentFrictionHabitIds = new Set(
+    u.friction.filter(f => parseDateKey(f.date) >= addDays(new Date(), -14)).map(f => f.habitId)
+  );
+
+  let chosen = notDoneToday.find(h => topCatIds.has(h.category) && recentFrictionHabitIds.has(h.id));
+  if (!chosen) chosen = notDoneToday.find(h => topCatIds.has(h.category));
+  if (!chosen) {
+    chosen = notDoneToday
+      .map(h => ({ h, c: calcConsistency(u, { habitId: h.id }) }))
+      .sort((a, b) => (a.c ? a.c.pct : -1) - (b.c ? b.c.pct : -1))[0].h;
+  }
+
+  const topPriority = (u.priorities || []).find(p => p.catId === chosen.category && p.isTop)
+    || (u.priorities || []).find(p => p.catId === chosen.category);
+  const priorityLine = topPriority ? `You said ${topPriority.label.toLowerCase()} matters right now.` : "Here's a meaningful next step.";
+
+  const challenge = { habitId: chosen.id, text: priorityLine, actionText: chosen.name, completed: false };
+  u.challenges[dStr] = challenge;
+  saveData();
+  return challenge;
+}
+
 function renderToday() {
   const u = getUser();
   const container = document.getElementById('today-container');
@@ -1382,7 +1681,7 @@ function renderToday() {
       <div class="panel today-empty-panel">
         <p class="eyebrow">${escapeHtml(MONTH_NAMES[now.getMonth()])} ${now.getDate()}</p>
         <h2 class="today-greeting">${greeting}, ${escapeHtml(firstName)}.</h2>
-        <p class="empty-note mt-10">No habits yet.</p>
+        <p class="empty-note mt-10">No habits yet \u2014 nothing to act on today.</p>
         <button type="button" class="btn-primary today-cta" id="today-add-habit-cta">Build your first one</button>
       </div>`;
     document.getElementById('today-add-habit-cta').addEventListener('click', () => switchTab('habits', document.querySelector('.nav-btn[data-tab="habits"]')));
@@ -1396,23 +1695,35 @@ function renderToday() {
   }).length;
   const pct = dueToday.length > 0 ? Math.round((doneCount / dueToday.length) * 100) : 0;
   const { current } = calcOverallStreaks(u);
-
+  const cons = calcConsistency(u, {});
   const friction = frictionAnalytics(u, 7);
   const topFriction = friction.top;
+  const challenge = getOrCreateTodayChallenge(u);
+  const topPriority = (u.priorities || []).find(p => p.isTop) || (u.priorities || [])[0];
 
   container.innerHTML = `
     <div class="panel today-header-panel">
-      <p class="eyebrow">${escapeHtml(MONTH_NAMES[now.getMonth()])} ${now.getDate()}, ${now.getFullYear()}</p>
+      <p class="eyebrow">${escapeHtml(MONTH_NAMES[now.getMonth()])} ${now.getDate()}</p>
       <h2 class="today-greeting">${greeting}, ${escapeHtml(firstName)}.</h2>
-      <div class="today-progress-row">
-        <span class="today-progress-fraction">${doneCount} / ${dueToday.length} complete</span>
-        <div class="progress-bar-bg today-progress-bar"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
-        <span class="today-progress-pct">${pct}%</span>
-      </div>
     </div>
 
+    ${challenge ? `
+    <div class="panel today-challenge-panel ${challenge.completed ? 'is-complete' : ''}">
+      <p class="today-challenge-label">${challenge.isCelebration ? "Today's challenge" : "Today's challenge"}</p>
+      ${challenge.actionText ? `<p class="today-challenge-context">${escapeHtml(challenge.text)}</p>` : ''}
+      <p class="today-challenge-action">${escapeHtml(challenge.actionText || challenge.text)}</p>
+      ${challenge.habitId ? `
+        <button type="button" class="btn-primary today-challenge-btn" id="today-challenge-btn" ${challenge.completed ? 'disabled' : ''}>
+          ${challenge.completed ? '\u2713 Done' : 'Start challenge'}
+        </button>` : ''}
+    </div>` : ''}
+
     <div class="panel">
-      <div class="panel-title">Today's habits</div>
+      <div class="today-actions-head">
+        <span class="panel-title mb-0">Today's actions</span>
+        <span class="today-progress-pct">${doneCount}/${dueToday.length} \u00b7 ${pct}%</span>
+      </div>
+      <div class="progress-bar-bg today-progress-bar"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
       <div id="today-habit-list" class="today-habit-list">
         ${dueToday.map(h => {
           const s = getCompletion(u, h.id, dStr);
@@ -1426,26 +1737,17 @@ function renderToday() {
       </div>
     </div>
 
-    <div class="today-stat-cards">
-      <div class="panel today-stat-card">
-        <span class="stat-value">${current}</span>
-        <span class="stat-label">Current streak (days)</span>
-      </div>
-      <div class="panel today-stat-card">
-        <span class="stat-value">${topFriction ? topFriction.reason : '\u2014'}</span>
-        <span class="stat-label">Most common friction this week</span>
-        ${topFriction ? `<button type="button" class="btn-secondary today-mini-link" id="today-view-friction">View friction</button>` : ''}
-      </div>
+    <div class="today-stat-row">
+      <div class="today-stat-chip"><span class="stat-value">${current}</span><span class="stat-label">Streak</span></div>
+      <div class="today-stat-chip"><span class="stat-value">${cons ? cons.pct + '%' : '\u2014'}</span><span class="stat-label">Consistency</span></div>
+      <div class="today-stat-chip"><span class="stat-value today-stat-chip-text">${topPriority ? topPriority.label : '\u2014'}</span><span class="stat-label">Active priority</span></div>
+      <div class="today-stat-chip"><span class="stat-value today-stat-chip-text">${topFriction ? topFriction.reason : '\u2014'}</span><span class="stat-label">Friction this week</span></div>
     </div>
 
-    <div class="panel">
-      <div class="panel-title">Quick actions</div>
-      <div class="today-quick-actions">
-        <button type="button" class="btn-secondary" data-tab="habits" id="qa-add-habit">Add habit</button>
-        <button type="button" class="btn-secondary" data-tab="friction" id="qa-log-friction">Log friction</button>
-        <button type="button" class="btn-secondary" data-tab="progress" id="qa-view-progress">View progress</button>
-        <button type="button" class="btn-secondary" data-tab="skills" id="qa-view-skills">View skills</button>
-      </div>
+    <div class="today-quick-actions">
+      <button type="button" class="btn-secondary" data-tab="habits" id="qa-add-habit">Habits</button>
+      <button type="button" class="btn-secondary" data-tab="progress" id="qa-view-progress">Progress</button>
+      <button type="button" class="btn-secondary" data-tab="progress" id="qa-log-friction">Friction</button>
     </div>
   `;
 
@@ -1455,13 +1757,34 @@ function renderToday() {
   container.querySelectorAll('[data-tab]').forEach(btn => {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab, document.querySelector(`.nav-btn[data-tab="${btn.dataset.tab}"]`)));
   });
-  const viewFrictionBtn = document.getElementById('today-view-friction');
-  if (viewFrictionBtn) viewFrictionBtn.addEventListener('click', () => switchTab('friction', document.querySelector('.nav-btn[data-tab="friction"]')));
+  const challengeBtn = document.getElementById('today-challenge-btn');
+  if (challengeBtn) {
+    challengeBtn.addEventListener('click', () => {
+      cycleCompletion(challenge.habitId, dStr, true);
+    });
+  }
 }
 
 /* =========================================================================
-   HABITS — monthly grid (preserved UX) + CRUD + detail modal
+   HABITS — long-term management. The monthly grid stays; Today never
+   duplicates it. A Skills sub-view lives here too (habits = do
+   repeatedly, skills = get better at over time; both are "management",
+   distinct from Today's execution).
    ========================================================================= */
+function renderHabitsTab() {
+  const gridSection = document.getElementById('habits-grid-section');
+  const skillsSection = document.getElementById('habits-skills-section');
+  document.querySelectorAll('.habits-subtab-btn').forEach(b => b.classList.toggle('active', b.dataset.sub === habitsSubTab));
+  if (gridSection) gridSection.classList.toggle('hidden', habitsSubTab !== 'grid');
+  if (skillsSection) skillsSection.classList.toggle('hidden', habitsSubTab !== 'skills');
+  if (habitsSubTab === 'grid') renderHabits(); else renderSkills();
+}
+
+function switchHabitsSubTab(sub) {
+  habitsSubTab = sub;
+  renderHabitsTab();
+}
+
 function renderMonthLabel() {
   const label = document.getElementById('month-label');
   if (label) label.innerText = `${MONTH_NAMES[viewMonth - 1]} ${viewYear}`;
@@ -1510,9 +1833,11 @@ function renderHabits() {
     const tr = document.createElement('tr');
     const isFirst = hIdx === 0;
     const isLast = hIdx === u.habits.length - 1;
+    const cons = calcConsistency(u, { habitId: habit.id });
     tr.innerHTML = `<td class="sticky-col">
       <div class="habit-cell">
         <span class="habit-name" data-hid="${habit.id}" title="Click for details">${escapeHtml(habit.name)}</span>
+        <span class="habit-cell-pct">${cons ? cons.pct + '%' : ''}</span>
         <div class="habit-actions">
           <button type="button" class="habit-action-btn" data-action="up" data-hid="${habit.id}" ${isFirst ? 'disabled' : ''} title="Move up">&uarr;</button>
           <button type="button" class="habit-action-btn" data-action="down" data-hid="${habit.id}" ${isLast ? 'disabled' : ''} title="Move down">&darr;</button>
@@ -1528,15 +1853,13 @@ function renderHabits() {
       if (val === STATUS.ADJUSTED) { mark = '~'; classCss = 'status-adjusted'; }
       if (val === STATUS.MISSED) { mark = '\u2715'; classCss = 'status-missed'; }
       const isToday = isCurrentMonth && day === todayDay;
-      tr.innerHTML += `<td class="${isToday ? 'is-today' : ''}"><div class="cell-toggle ${classCss}" data-hid="${habit.id}" data-date="${dStr}">${mark}</div></td>`;
+      const title = val ? `${STATUS_HELP[val]}` : '';
+      tr.innerHTML += `<td class="${isToday ? 'is-today' : ''}"><div class="cell-toggle ${classCss}" data-hid="${habit.id}" data-date="${dStr}" title="${escapeHtml(title)}">${mark}</div></td>`;
     }
     body.appendChild(tr);
   });
 }
 
-// Cycles a single day's status for a habit: empty -> done -> adjusted -> missed -> empty.
-// Missing triggers the friction modal. `rerenderToday` lets Today's own
-// toggle re-render itself instead of the grid.
 function cycleCompletion(habitId, dStr, rerenderToday) {
   const u = getUser();
   const curr = getCompletion(u, habitId, dStr);
@@ -1550,18 +1873,9 @@ function cycleCompletion(habitId, dStr, rerenderToday) {
   } else next = null;
 
   setCompletion(u, habitId, dStr, next);
-  if (next === STATUS.DONE) logActivity(u, habitId, dStr);
   saveData();
-  if (rerenderToday) renderToday(); else renderHabits();
+  if (rerenderToday) renderToday(); else if (habitsSubTab === 'grid') renderHabits();
   if (currentTab === 'today') renderToday();
-}
-
-function logActivity(u, habitId, dStr) {
-  const habit = u.habits.find(h => h.id === habitId);
-  if (!habit) return;
-  u.activityLog = u.activityLog || [];
-  u.activityLog.push({ id: genId('act'), habitId, habitName: habit.name, date: dStr, at: Date.now() });
-  if (u.activityLog.length > 60) u.activityLog = u.activityLog.slice(-60);
 }
 
 function openFailureModal() {
@@ -1585,9 +1899,9 @@ function submitFailureReason(reason) {
   pendingMissCell = null;
   document.getElementById('failure-modal').classList.add('hidden');
   saveData();
-  renderHabits();
+  if (habitsSubTab === 'grid') renderHabits();
   if (currentTab === 'today') renderToday();
-  if (currentTab === 'friction') renderFriction();
+  if (currentTab === 'progress') renderFrictionSection();
 }
 
 function addHabit() {
@@ -1682,6 +1996,7 @@ function openHabitDetail(habitId) {
       <div class="stat-box"><span class="stat-value">${cons ? cons.missed : 0}</span><span class="stat-label">Missed</span></div>
       <div class="stat-box"><span class="stat-value">${cons ? cons.adjusted : 0}</span><span class="stat-label">Adjusted</span></div>
     </div>
+    <p class="hint-text mb-8"><strong>Adjusted</strong> = ${STATUS_HELP.adjusted}</p>
     <p class="input-label mb-8">Common friction</p>
     ${topReasons.length ? topReasons.map(([r, n]) => `<p class="hint-text">${escapeHtml(r)} &mdash; ${n}x</p>`).join('') : '<p class="empty-note">No friction logged for this habit yet.</p>'}
     <div class="mt-14">
@@ -1712,7 +2027,9 @@ function openHabitDetail(habitId) {
 }
 
 /* =========================================================================
-   SKILLS — things you're getting better at (distinct from habits)
+   SKILLS I'M BUILDING — distinct from habits: something you're actively
+   trying to get better at, not something you repeat daily. Connected back
+   to the priority area it came from so its purpose stays visible.
    ========================================================================= */
 function skillLevelLabel(progress) {
   if (progress >= 75) return 'Strong';
@@ -1728,11 +2045,12 @@ function renderSkills() {
   container.innerHTML = '';
 
   if (u.skills.length === 0) {
-    container.innerHTML = '<p class="empty-note">No skills yet. Your onboarding can generate some based on what you\'re working on, or add one below.</p>';
+    container.innerHTML = '<p class="empty-note">No skills yet. A skill is something you\'re actively trying to get better at (not something you repeat daily like a habit) \u2014 add one below, or generate one from your priorities during onboarding.</p>';
     return;
   }
 
   u.skills.forEach(skill => {
+    const cat = findCategory(skill.relatedProblem);
     const card = document.createElement('div');
     card.className = 'panel skill-card';
     card.innerHTML = `
@@ -1740,17 +2058,19 @@ function renderSkills() {
         <span class="skill-title">${escapeHtml(skill.name)}</span>
         <button class="btn-secondary skill-remove-btn" type="button" data-sid="${skill.id}">Remove</button>
       </div>
+      ${cat ? `<span class="skill-connected-tag">Connected to: ${escapeHtml(cat.title)}</span>` : ''}
       <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${skill.progress}%"></div></div>
       <div class="skill-meta">${skillLevelLabel(skill.progress)} &middot; ${skill.progress}%</div>
       <div class="flex-gap-8 mb-8">
         <button class="btn-secondary add-hrs-btn" type="button" data-sid="${skill.id}" data-hrs="0.5">+0.5h practice</button>
         <button class="btn-secondary add-hrs-btn" type="button" data-sid="${skill.id}" data-hrs="1">+1h practice</button>
       </div>
+      <p class="input-label mb-8">Evidence of progress</p>
       <div class="skill-evidence-list">
-        ${(skill.evidence || []).slice().reverse().slice(0, 4).map(ev => `<p class="hint-text">&bull; ${escapeHtml(ev.text)}</p>`).join('')}
+        ${(skill.evidence || []).slice().reverse().slice(0, 4).map(ev => `<p class="hint-text">&bull; ${escapeHtml(ev.text)}</p>`).join('') || '<p class="hint-text">Nothing logged yet.</p>'}
       </div>
       <div class="inline-form">
-        <input type="text" class="inline-input skill-evidence-input" data-sid="${skill.id}" placeholder="Add evidence of progress\u2026">
+        <input type="text" class="inline-input skill-evidence-input" data-sid="${skill.id}" placeholder="e.g. Spoke up in a meeting today\u2026">
         <button class="btn-secondary skill-evidence-btn" type="button" data-sid="${skill.id}">Add</button>
       </div>
     `;
@@ -1801,6 +2121,8 @@ function addSkillEvidence(skillId, text) {
 
 /* =========================================================================
    FRICTION — real misses only. Seeded "watch for" items never appear here.
+   Lives inside Progress: "what's improving" and "what's repeatedly
+   getting in the way" belong together.
    ========================================================================= */
 function frictionAnalytics(u, sinceDays) {
   let entries = u.friction;
@@ -1817,18 +2139,22 @@ function frictionAnalytics(u, sinceDays) {
   return { total, breakdown, top: breakdown[0] || null, entries };
 }
 
-function renderFriction() {
+function renderFrictionSection() {
   const u = getUser();
   const analyticsEl = document.getElementById('friction-analytics');
   const list = document.getElementById('friction-log-list');
   if (!u || !analyticsEl || !list) return;
 
   const stats = frictionAnalytics(u, 30);
+  const cons = calcConsistency(u, { from: addDays(new Date(), -29) });
 
   if (stats.total === 0) {
     analyticsEl.innerHTML = '<p class="empty-note">No friction logged yet. When a habit doesn\'t happen, log what got in the way and patterns will show up here.</p>';
   } else {
+    const planned = cons ? cons.expected : 0;
+    const missedTotal = cons ? cons.missed : 0;
     analyticsEl.innerHTML = `
+      ${planned ? `<p class="friction-summary-line">You planned <strong>${planned}</strong> habit check-ins this month. <strong>${missedTotal}</strong> were missed.${stats.top ? ` Your most common blocker was <strong>${escapeHtml(stats.top.reason)}</strong>.` : ''}</p>` : ''}
       <div class="friction-breakdown">
         ${stats.breakdown.map(b => `
           <div class="friction-breakdown-row">
@@ -1858,13 +2184,22 @@ function renderFriction() {
 }
 
 /* =========================================================================
-   PROGRESS
+   PROGRESS — explains the journey: what's improving, what's slipping,
+   why, and what to adjust. Folds in Friction and Weekly Review so they
+   read as one connected story instead of separate pages.
    ========================================================================= */
-function renderProgress() {
+function renderProgressTab() {
+  renderProgressOverview();
+  renderFrictionSection();
+  renderWeeklyReviewInline();
+}
+
+function renderProgressOverview() {
   const u = getUser();
   const summaryEl = document.getElementById('progress-summary');
   const chartEl = document.getElementById('progress-chart');
   const habitsEl = document.getElementById('progress-habits');
+  const narrativeEl = document.getElementById('progress-narrative');
   if (!u || !summaryEl || !chartEl || !habitsEl) return;
 
   const overall = calcConsistency(u, {});
@@ -1872,7 +2207,7 @@ function renderProgress() {
     summaryEl.innerHTML = '<p class="empty-note">Keep checking in. Your progress will appear here.</p>';
     chartEl.innerHTML = '';
     habitsEl.innerHTML = '';
-    renderWeeklyReviewInline();
+    if (narrativeEl) narrativeEl.innerHTML = '';
     return;
   }
 
@@ -1890,7 +2225,6 @@ function renderProgress() {
     <p class="hint-text">${overall.done} done, ${overall.adjusted} adjusted, ${overall.missed} missed overall.</p>
   `;
 
-  // Monthly chart: last 8 months that have any completion data.
   const byMonth = {};
   Object.keys(u.completions).forEach(key => {
     const dStr = key.split('__')[1];
@@ -1900,25 +2234,43 @@ function renderProgress() {
     byMonth[monthKey][status] = (byMonth[monthKey][status] || 0) + 1;
   });
   const monthKeys = Object.keys(byMonth).sort().slice(-8);
+
+  let improving = null, slipping = null;
+  if (monthKeys.length >= 2) {
+    const lastKey = monthKeys[monthKeys.length - 1];
+    const prevKey = monthKeys[monthKeys.length - 2];
+    const pctOf = (mk) => {
+      const m = byMonth[mk];
+      const t = m.done + m.adjusted + m.missed;
+      return t > 0 ? Math.round(((m.done + m.adjusted) / t) * 100) : null;
+    };
+    const lastPct = pctOf(lastKey), prevPct = pctOf(prevKey);
+    if (lastPct !== null && prevPct !== null) {
+      if (lastPct > prevPct) improving = lastPct - prevPct;
+      else if (lastPct < prevPct) slipping = prevPct - lastPct;
+    }
+  }
+  if (narrativeEl) {
+    if (improving !== null) {
+      narrativeEl.innerHTML = `<p class="advice-bar">Consistency is up <strong>${improving}%</strong> from last month. Whatever changed, it's working.</p>`;
+    } else if (slipping !== null) {
+      const worst = [...u.habits].map(h => ({ h, c: calcConsistency(u, { habitId: h.id, from: addDays(new Date(), -29) }) }))
+        .filter(x => x.c).sort((a, b) => a.c.pct - b.c.pct)[0];
+      narrativeEl.innerHTML = `<p class="advice-bar">Consistency is down <strong>${slipping}%</strong> from last month.${worst ? ` <strong>${escapeHtml(worst.h.name)}</strong> has slipped the most \u2014 check Friction below for why.` : ''}</p>`;
+    } else {
+      narrativeEl.innerHTML = '';
+    }
+  }
+
   if (monthKeys.length === 0) {
     chartEl.innerHTML = '<p class="empty-note">Not enough data yet.</p>';
   } else {
-    chartEl.innerHTML = '<div class="bar-chart">' + monthKeys.map((mk, i) => {
+    chartEl.innerHTML = '<div class="bar-chart">' + monthKeys.map((mk) => {
       const m = byMonth[mk];
       const totalM = m.done + m.adjusted + m.missed;
       const pct = totalM > 0 ? Math.round(((m.done + m.adjusted) / totalM) * 100) : 0;
       const [y, mo] = mk.split('-').map(Number);
       const label = MONTH_NAMES[mo - 1].slice(0, 3);
-      let trendNote = '';
-      if (i > 0) {
-        const prevKey = monthKeys[i - 1];
-        const pm = byMonth[prevKey];
-        const prevTotal = pm.done + pm.adjusted + pm.missed;
-        if (prevTotal > 0) {
-          const prevPct = Math.round(((pm.done + pm.adjusted) / prevTotal) * 100);
-          trendNote = pct - prevPct;
-        }
-      }
       return `
         <div class="bar-col" title="${totalM} logged days">
           <span class="bar-pct">${pct}%</span>
@@ -1928,7 +2280,6 @@ function renderProgress() {
     }).join('') + '</div>';
   }
 
-  // Per-habit breakdown using the same central calculator.
   if (u.habits.length === 0) {
     habitsEl.innerHTML = '<p class="empty-note">No habits yet.</p>';
   } else {
@@ -1943,12 +2294,11 @@ function renderProgress() {
         </div>`;
     }).join('');
   }
-
-  renderWeeklyReviewInline();
 }
 
 /* =========================================================================
-   WEEKLY REVIEW
+   WEEKLY REVIEW — where the user reflects and adjusts, feeding back into
+   Today's context (top priorities/challenge generation).
    ========================================================================= */
 function computeWeeklySnapshot(u) {
   const weekAgo = addDays(new Date(), -6);
@@ -1980,7 +2330,6 @@ function computeWeeklySnapshot(u) {
   });
 
   const weekFriction = frictionAnalytics(u, 7);
-
   return { consistency, done, adjusted, missed, strongest, weakest, topFriction: weekFriction.top };
 }
 
@@ -2009,6 +2358,7 @@ function openWeeklyReviewModal() {
   const snap = computeWeeklySnapshot(u);
   const weekKey = isoWeekKey(new Date());
   const existing = (u.weeklyReviews || []).find(r => r.weekKey === weekKey);
+  const ans = (existing && existing.answers) || {};
 
   document.getElementById('weekly-review-body').innerHTML = `
     <div class="panel-title modal-title-margin">Your week</div>
@@ -2020,15 +2370,27 @@ function openWeeklyReviewModal() {
     <p class="hint-text">Top friction: ${snap.topFriction ? escapeHtml(snap.topFriction.reason) : '\u2014'}</p>
     <p class="hint-text">Strongest habit: ${snap.strongest ? escapeHtml(snap.strongest.name) : '\u2014'}</p>
     <p class="hint-text">Needs attention: ${snap.weakest ? escapeHtml(snap.weakest.name) : '\u2014'}</p>
-    <label class="input-label mt-14" for="weekly-reflection-input">What should change next week?</label>
+
+    <label class="input-label mt-14" for="wr-went-well">What went well?</label>
+    <input type="text" id="wr-went-well" class="inline-input full-width" value="${escapeHtml(ans.wentWell || '')}">
+    <label class="input-label mt-10" for="wr-didnt">What didn't?</label>
+    <input type="text" id="wr-didnt" class="inline-input full-width" value="${escapeHtml(ans.didnt || '')}">
+    <label class="input-label mt-10" for="wr-blocker">What kept getting in the way?</label>
+    <input type="text" id="wr-blocker" class="inline-input full-width" value="${escapeHtml(ans.blocker || '')}">
+    <label class="input-label mt-10" for="weekly-reflection-input">What should change next week?</label>
     <textarea id="weekly-reflection-input" class="inline-input full-width weekly-reflection-textarea">${escapeHtml(existing ? existing.reflection : '')}</textarea>
     <button type="button" class="btn-secondary mt-10" id="weekly-review-save">Save reflection</button>
   `;
   document.getElementById('weekly-review-save').addEventListener('click', () => {
-    const text = document.getElementById('weekly-reflection-input').value.trim();
+    const reflection = document.getElementById('weekly-reflection-input').value.trim();
+    const answers = {
+      wentWell: document.getElementById('wr-went-well').value.trim(),
+      didnt: document.getElementById('wr-didnt').value.trim(),
+      blocker: document.getElementById('wr-blocker').value.trim()
+    };
     u.weeklyReviews = u.weeklyReviews || [];
     const idx = u.weeklyReviews.findIndex(r => r.weekKey === weekKey);
-    const record = { weekKey, reflection: text, createdAt: Date.now(), snapshot: snap };
+    const record = { weekKey, reflection, answers, createdAt: Date.now(), snapshot: snap };
     if (idx >= 0) u.weeklyReviews[idx] = record; else u.weeklyReviews.push(record);
     saveData();
     document.getElementById('weekly-review-modal').classList.add('hidden');
@@ -2037,108 +2399,41 @@ function openWeeklyReviewModal() {
 }
 
 /* =========================================================================
-   GROUP — real users only. No Friend 1-8 placeholders, no fake activity,
-   no stake mechanics. Private onboarding data, friction notes, and habit
-   names are never exposed here.
+   PROFILE — user info, access code, account, notifications, appearance,
+   privacy, data, sign out. (Formerly "Settings" — merged and renamed;
+   there is no Group left to have Group-only settings for.)
    ========================================================================= */
-function renderGroup() {
-  const u = getUser();
-  const tbody = document.getElementById('group-table-body');
-  const wrap = document.getElementById('group-table-wrap');
-  const emptyEl = document.getElementById('group-empty');
-  const monthNote = document.getElementById('group-month-note');
-  const activityEl = document.getElementById('group-activity');
-  if (!u || !tbody) return;
-
-  const group = getGroup(u);
-  const memberIds = (group.members || []).filter(id => state.users[id]);
-  const visibleMembers = memberIds
-    .map(id => state.users[id])
-    .filter(m => m.id === u.id || (m.settings.privacy.groupVisibility !== false));
-
-  if (monthNote) monthNote.innerText = visibleMembers.length <= 1
-    ? "Everyone you invite into this browser's OnTrack joins this group automatically."
-    : `${visibleMembers.length} members visible to you.`;
-
-  if (visibleMembers.length <= 1) {
-    wrap.classList.add('hidden');
-    emptyEl.classList.remove('hidden');
-    emptyEl.innerHTML = '<p class="empty-note">You\'re currently the only member. Create another profile on this device (Switch &rarr; New profile) to see group accountability in action.</p>';
-  } else {
-    wrap.classList.remove('hidden');
-    emptyEl.classList.add('hidden');
-    tbody.innerHTML = '';
-    visibleMembers
-      .sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0))
-      .forEach(m => {
-        const cons = calcConsistency(m, {});
-        const streaks = calcOverallStreaks(m);
-        const online = isOnline(m.lastSeen);
-        const showIdentity = m.id === u.id || m.settings.privacy.profileVisibility !== false;
-        const displayName = showIdentity ? escapeHtml(m.name) : 'Member';
-        const avatarHtml = showIdentity ? avatarMarkup(m) : `<span class="avatar-initials">?</span>`;
-
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td class="profile-cell"><span class="avatar avatar-sm">${avatarHtml}</span><span>${displayName}${m.id === u.id ? ' (you)' : ''}</span></td>
-          <td class="status-cell"><span class="status-dot ${online ? 'online' : 'offline'}"></span>${online ? 'Online' : 'Offline'}</td>
-          <td>${formatLastSeen(m.lastSeen)}</td>
-          <td>${cons ? cons.pct + '%' : '\u2014'}</td>
-          <td>${streaks.current}</td>
-          <td>${cons ? cons.done : 0}</td>
-          <td>${cons ? cons.adjusted : 0}</td>
-          <td>${cons ? cons.missed : 0}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-  }
-
-  // Lightweight activity feed — completions only, never friction/notes/
-  // onboarding data, and only from members who opted into activity sharing.
-  const events = [];
-  visibleMembers.forEach(m => {
-    if (m.id !== u.id && m.settings.privacy.activityVisibility === false) return;
-    (m.activityLog || []).forEach(ev => events.push({ ...ev, userName: m.id === u.id ? 'You' : m.name }));
-  });
-  events.sort((a, b) => b.at - a.at);
-  if (activityEl) {
-    if (events.length === 0) {
-      activityEl.innerHTML = '<p class="empty-note">No activity yet.</p>';
-    } else {
-      activityEl.innerHTML = events.slice(0, 15).map(ev =>
-        `<div class="friction-item">${escapeHtml(ev.userName)} completed <strong>${escapeHtml(ev.habitName)}</strong>.</div>`
-      ).join('');
-    }
-  }
-}
-
-/* =========================================================================
-   SETTINGS
-   ========================================================================= */
-function populateSettingsForm() {
+function populateProfileForm() {
   const u = getUser();
   if (!u) return;
 
   document.getElementById('display-name-input').value = u.name;
-  document.getElementById('settings-identity-note').innerText =
-    `Profile created ${new Date(u.createdAt).toLocaleDateString()}. Data for this profile is stored only in this browser.`;
-  document.getElementById('settings-access-code').innerText = u.accessCode || '\u2014';
+  document.getElementById('profile-identity-note').innerText =
+    `Profile created ${new Date(u.createdAt).toLocaleDateString()}.`;
+  document.getElementById('profile-access-code').innerText = u.accessCode || '\u2014';
+
+  const cloudStatus = document.getElementById('profile-cloud-status');
+  if (cloudStatus) {
+    cloudStatus.innerHTML = isSupabaseConfigured()
+      ? '<span class="status-dot online"></span> Connected \u2014 your account syncs across devices.'
+      : '<span class="status-dot offline"></span> Not connected \u2014 this profile only exists on this device. See SETUP.md to connect Supabase.';
+  }
 
   const cons = calcConsistency(u, {});
   const { current } = calcOverallStreaks(u);
-  document.getElementById('settings-profile-stats').innerText =
-    `${current}-day streak \u00b7 ${cons ? cons.pct + '%' : '\u2014'} consistency \u00b7 ${u.skills.length} skill${u.skills.length === 1 ? '' : 's'} developing`;
+  document.getElementById('profile-stats').innerText =
+    `${current}-day streak \u00b7 ${cons ? cons.pct + '%' : '\u2014'} consistency \u00b7 ${u.skills.length} skill${u.skills.length === 1 ? '' : 's'} building`;
 
   document.querySelectorAll('#appearance-segmented .segmented-btn').forEach(b => b.classList.toggle('active', b.dataset.value === u.settings.appearance));
 
   document.getElementById('notif-habit-reminders').checked = !!u.settings.notifications.habitReminders;
-  document.getElementById('notif-daily-checkin').checked = !!u.settings.notifications.dailyCheckin;
+  document.getElementById('notif-challenge-reminders').checked = !!u.settings.notifications.challengeReminders;
   document.getElementById('notif-weekly-review').checked = !!u.settings.notifications.weeklyReview;
-  document.getElementById('notif-group-activity').checked = !!u.settings.notifications.groupActivity;
+  document.getElementById('notif-daily-checkin').checked = !!u.settings.notifications.dailyCheckin;
 
-  document.getElementById('privacy-group-visible').checked = u.settings.privacy.groupVisibility !== false;
-  document.getElementById('privacy-activity-visible').checked = u.settings.privacy.activityVisibility !== false;
-  document.getElementById('privacy-profile-visible').checked = u.settings.privacy.profileVisibility !== false;
+  document.getElementById('privacy-data-note').innerText = isSupabaseConfigured()
+    ? "Your data is stored in your own Supabase-backed account, isolated by row-level security. No one else can read it."
+    : "Your data lives only in this browser and is never sent anywhere.";
 
   refreshAvatarDisplays();
 }
@@ -2166,12 +2461,6 @@ function updateNotificationPref(key, checked) {
   saveData();
 }
 
-function updatePrivacyPref(key, checked) {
-  const u = getUser();
-  u.settings.privacy[key] = checked;
-  saveData();
-}
-
 function resetProfile() {
   const u = getUser();
   if (!u) return;
@@ -2182,7 +2471,6 @@ function resetProfile() {
   kept.accessCode = u.accessCode;
   kept.lastSeen = u.lastSeen;
   kept.createdAt = u.createdAt;
-  kept.groupId = u.groupId;
   kept.settings = u.settings;
   state.users[u.id] = kept;
   saveData();
@@ -2200,7 +2488,7 @@ function clearAllLocalData() {
    DATA EXPORT / IMPORT
    ========================================================================= */
 function exportData() {
-  const payload = { version: 2, exportedAt: new Date().toISOString(), ...state };
+  const payload = { version: 3, exportedAt: new Date().toISOString(), ...state };
   const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(payload));
   const downloadAnchor = document.createElement('a');
   downloadAnchor.setAttribute("href", dataStr);
@@ -2211,7 +2499,7 @@ function exportData() {
 }
 
 function validateImportedState(obj) {
-  return obj && typeof obj === 'object' && obj.users && typeof obj.users === 'object' && obj.groups && typeof obj.groups === 'object';
+  return obj && typeof obj === 'object' && obj.users && typeof obj.users === 'object';
 }
 
 function importData(e) {
@@ -2222,10 +2510,9 @@ function importData(e) {
     try {
       const imported = JSON.parse(event.target.result);
       if (!validateImportedState(imported)) {
-        throw new Error('File is missing "users" and "groups" sections.');
+        throw new Error('File is missing a "users" section.');
       }
-      state = { version: 2, session: imported.session || { activeUserId: null }, users: imported.users, groups: imported.groups };
-      ensureDefaultGroup();
+      state = { version: 3, session: imported.session || { activeUserId: null }, users: imported.users };
       backfillAccessCodes();
       if (!state.session.activeUserId || !state.users[state.session.activeUserId]) {
         state.session.activeUserId = Object.keys(state.users)[0] || null;
@@ -2316,10 +2603,9 @@ function refreshAvatarDisplays() {
   const u = getUser();
   if (!u) return;
   const headerAvatar = document.getElementById('header-avatar');
-  const settingsAvatar = document.getElementById('settings-avatar');
+  const profileAvatar = document.getElementById('profile-avatar');
   if (headerAvatar) headerAvatar.innerHTML = avatarMarkup(u);
-  if (settingsAvatar) settingsAvatar.innerHTML = avatarMarkup(u);
-  if (currentTab === 'group') renderGroup();
+  if (profileAvatar) profileAvatar.innerHTML = avatarMarkup(u);
 }
 
 /* =========================================================================
@@ -2332,7 +2618,7 @@ function setupEventListeners() {
   };
 
   bind('lock-btn', 'click', switchProfile);
-  bind('header-avatar-btn', 'click', () => switchTab('settings', document.querySelector('.nav-btn[data-tab="settings"]')));
+  bind('header-avatar-btn', 'click', () => switchTab('profile', document.querySelector('.nav-btn[data-tab="profile"]')));
 
   bind('add-habit-btn', 'click', addHabit);
   bind('new-habit-input', 'keyup', (e) => { if (e.key === 'Enter') addHabit(); });
@@ -2342,6 +2628,10 @@ function setupEventListeners() {
 
   bind('add-skill-btn', 'click', addSkill);
   bind('new-skill-input', 'keyup', (e) => { if (e.key === 'Enter') addSkill(); });
+
+  document.querySelectorAll('.habits-subtab-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchHabitsSubTab(btn.dataset.sub));
+  });
 
   bind('export-btn', 'click', exportData);
   bind('import-btn', 'click', () => document.getElementById('import-file').click());
@@ -2367,32 +2657,15 @@ function setupEventListeners() {
   }
 
   bind('notif-habit-reminders', 'change', (e) => updateNotificationPref('habitReminders', e.target.checked));
-  bind('notif-daily-checkin', 'change', (e) => updateNotificationPref('dailyCheckin', e.target.checked));
+  bind('notif-challenge-reminders', 'change', (e) => updateNotificationPref('challengeReminders', e.target.checked));
   bind('notif-weekly-review', 'change', (e) => updateNotificationPref('weeklyReview', e.target.checked));
-  bind('notif-group-activity', 'change', (e) => updateNotificationPref('groupActivity', e.target.checked));
-
-  bind('privacy-group-visible', 'change', (e) => updatePrivacyPref('groupVisibility', e.target.checked));
-  bind('privacy-activity-visible', 'change', (e) => updatePrivacyPref('activityVisibility', e.target.checked));
-  bind('privacy-profile-visible', 'change', (e) => updatePrivacyPref('profileVisibility', e.target.checked));
+  bind('notif-daily-checkin', 'change', (e) => updateNotificationPref('dailyCheckin', e.target.checked));
 
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', (e) => switchTab(btn.dataset.tab, btn));
   });
   document.querySelectorAll('.mnav-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (btn.dataset.tab === 'more') {
-        document.getElementById('more-sheet').classList.remove('hidden');
-      } else {
-        switchTab(btn.dataset.tab, document.querySelector(`.nav-btn[data-tab="${btn.dataset.tab}"]`));
-      }
-    });
-  });
-  bind('more-sheet-close', 'click', () => document.getElementById('more-sheet').classList.add('hidden'));
-  document.querySelectorAll('#more-sheet .modal-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.getElementById('more-sheet').classList.add('hidden');
-      switchTab(btn.dataset.tab, document.querySelector(`.nav-btn[data-tab="${btn.dataset.tab}"]`));
-    });
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab, document.querySelector(`.nav-btn[data-tab="${btn.dataset.tab}"]`)));
   });
 
   const gridBody = document.getElementById('grid-body');
@@ -2412,7 +2685,6 @@ function setupEventListeners() {
       const nameEl = e.target.closest('.habit-name');
       if (nameEl) openHabitDetail(nameEl.dataset.hid);
     });
-    // dblclick to rename inline (single click opens detail modal)
     gridBody.addEventListener('dblclick', (e) => {
       const nameEl = e.target.closest('.habit-name');
       if (nameEl) startRenameHabit(nameEl.dataset.hid, nameEl);
@@ -2435,7 +2707,6 @@ function setupEventListeners() {
   }
 
   bind('failure-note-submit', 'click', () => {
-    // If a reason wasn't picked yet, default to "Other" with the note.
     if (pendingMissCell) submitFailureReason('Other');
   });
 

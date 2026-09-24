@@ -5,7 +5,7 @@
    needs a push subscription + a server to send from, which isn't wired
    up here. See SETUP.md for what real push delivery would require. */
 
-const CACHE_NAME = 'ontrack-shell-v2';
+const CACHE_NAME = 'ontrack-shell-v1';
 const SHELL_FILES = [
   './',
   './index.html',
@@ -13,8 +13,6 @@ const SHELL_FILES = [
   './app.js',
   './supabase-config.js',
   './manifest.json',
-  './favicon.ico',
-  './icons/favicon-32x32.png',
   './icons/icon-192.png',
   './icons/icon-512.png'
 ];

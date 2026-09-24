@@ -886,34 +886,7 @@ table.habit-table td.sticky-col {
   box-shadow: 0 0 10px var(--accent-glow);
 }
 
-/* --- GROUP TABLE --- */
-.data-table {
-  width: 100%;
-  min-width: 640px;
-  border-collapse: collapse;
-  text-align: left;
-}
-
-.data-table th,
-.data-table td {
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--w06);
-  font-size: 0.9rem;
-  color: var(--text-muted);
-}
-
-.data-table th {
-  font-weight: 600;
-  color: var(--text-faint);
-  background: var(--w02);
-}
-
-.status-cell {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
+/* --- STATUS INDICATOR (reused by Profile's cloud connection status) --- */
 .status-dot {
   display: inline-block;
   width: 9px;
@@ -1429,11 +1402,10 @@ input:focus-visible {
    ========================================================================= */
 .habit-detail-modal { max-width: 480px; max-height: 85vh; overflow-y: auto; text-align: left; }
 .weekly-reflection-textarea { min-height: 80px; resize: vertical; font-family: inherit; }
-.more-sheet-modal { max-width: 360px; }
-.more-sheet-list { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
 
 /* =========================================================================
-   MOBILE BOTTOM NAV
+   MOBILE BOTTOM NAV — labelled SVG icons, not abstract glyphs, so the
+   nav is obvious even to a first-time user.
    ========================================================================= */
 .mobile-nav { display: none; }
 
@@ -1453,11 +1425,12 @@ input:focus-visible {
   }
   .mnav-btn {
     flex: 1; background: none; border: none; color: var(--text-faint);
-    display: flex; flex-direction: column; align-items: center; gap: 2px;
-    font-size: 0.66rem; padding: 6px 2px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    font-size: 0.68rem; font-weight: 500; padding: 6px 2px; cursor: pointer;
   }
-  .mnav-icon { font-size: 1.1rem; line-height: 1; }
+  .mnav-icon { width: 22px; height: 22px; }
   .mnav-btn.active { color: var(--accent-light); }
+  .mnav-btn.active .mnav-icon { stroke: var(--accent-light); }
 
   main { padding-bottom: 84px; }
   body { padding-bottom: env(safe-area-inset-bottom); }
@@ -1580,3 +1553,119 @@ html[data-theme="light"] table.habit-table td.is-today {
   padding: 6px 12px;
   margin-top: 6px;
 }
+
+/* =========================================================================
+   BRANDED STARTUP SPLASH (PWA / first paint)
+   ========================================================================= */
+#app-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at top, var(--page-bg-start) 0%, var(--page-bg-end) 100%);
+  transition: opacity 0.4s ease;
+}
+#app-splash.splash-hide { opacity: 0; pointer-events: none; }
+.splash-inner { text-align: center; animation: splashRise 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+.splash-mark {
+  width: 64px; height: 64px; margin: 0 auto 18px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+  color: #fff; font-weight: 700; font-size: 1.4rem;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 12px 30px rgba(31, 122, 77, 0.35);
+}
+.splash-title {
+  font-weight: 700; font-size: 1.3rem; letter-spacing: 0.18em;
+  background: var(--brand-gradient);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  margin-bottom: 8px;
+}
+.splash-tagline { font-size: 0.85rem; color: var(--text-faint); }
+@keyframes splashRise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================================================================
+   TODAY'S CHALLENGE
+   ========================================================================= */
+.today-challenge-panel {
+  background: linear-gradient(135deg, rgba(31, 122, 77, 0.16) 0%, var(--panel-bg) 65%);
+  border-color: rgba(31, 122, 77, 0.35);
+}
+.today-challenge-panel.is-complete { background: var(--panel-bg); border-color: var(--panel-border); }
+.today-challenge-label {
+  text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.72rem; font-weight: 700;
+  color: var(--accent-light); margin-bottom: 8px;
+}
+.today-challenge-context { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px; }
+.today-challenge-action { font-size: 1.15rem; font-weight: 600; color: var(--text-primary); margin-bottom: 14px; line-height: 1.35; }
+.today-challenge-btn { min-width: 180px; }
+.today-challenge-btn:disabled { opacity: 0.65; cursor: default; background: var(--accent-dark); }
+
+.today-actions-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.panel-title.mb-0 { margin-bottom: 0; }
+
+.today-stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.today-stat-chip {
+  background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px;
+  padding: 12px 10px; display: flex; flex-direction: column; gap: 3px; text-align: center;
+}
+.today-stat-chip .stat-value { font-size: 1rem; }
+.today-stat-chip-text { font-size: 0.78rem !important; line-height: 1.25; }
+@media (max-width: 640px) {
+  .today-stat-row { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* =========================================================================
+   ONBOARDING — priority star list (step 2)
+   ========================================================================= */
+.onboard-priority-list { display: flex; flex-direction: column; gap: 8px; max-height: 48vh; overflow-y: auto; margin-bottom: 8px; }
+.priority-row {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--w03); border: 1px solid var(--w06);
+  border-radius: 10px; padding: 10px 12px;
+}
+.priority-row.is-top { background: rgba(31, 122, 77, 0.14); border-color: rgba(31, 122, 77, 0.4); }
+.priority-star {
+  background: none; border: none; cursor: pointer; font-size: 1.2rem;
+  color: var(--text-faint); line-height: 1; padding: 2px;
+  flex-shrink: 0;
+}
+.priority-row.is-top .priority-star { color: #f5c451; }
+.priority-label { flex: 1; font-size: 0.88rem; color: var(--text-secondary); }
+.priority-cat-tag { font-size: 0.7rem; color: var(--text-faint); white-space: nowrap; }
+.empty-note-inline { color: var(--text-faint); font-size: 0.85rem; list-style: none; }
+
+/* =========================================================================
+   HABITS <-> SKILLS SUB-NAV
+   ========================================================================= */
+.habits-subtabs { display: flex; gap: 8px; margin-bottom: 16px; }
+.habits-subtab-btn {
+  background: var(--w03); border: 1px solid var(--w07); color: var(--text-faint);
+  padding: 9px 16px; border-radius: 999px; font-size: 0.85rem; font-weight: 500; cursor: pointer;
+}
+.habits-subtab-btn.active { background: var(--chip-selected-bg); border-color: var(--accent-dark); color: var(--chip-selected-text); }
+.habit-cell-pct { font-size: 0.72rem; color: var(--text-faint); flex-shrink: 0; }
+
+/* =========================================================================
+   SKILLS — connected-to tag
+   ========================================================================= */
+.skill-connected-tag {
+  display: inline-block; font-size: 0.72rem; color: var(--accent-light);
+  background: rgba(31, 122, 77, 0.12); border-radius: 6px; padding: 2px 8px; margin-bottom: 10px;
+}
+
+/* =========================================================================
+   PROGRESS — narrative + friction summary line
+   ========================================================================= */
+#progress-narrative .advice-bar { margin: 0 0 18px; }
+.friction-summary-line { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.5; }
+
+/* =========================================================================
+   PROFILE — cloud status line
+   ========================================================================= */
+.cloud-status-line { font-size: 0.85rem; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; }
