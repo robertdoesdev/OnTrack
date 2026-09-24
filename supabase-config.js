@@ -1,5 +1,5 @@
 window.ONTRACK_SUPABASE_CONFIG = {
-  url: '',            // e.g. 'https://YOUR_PROJECT_REF.supabase.co'
-  anonKey: '',         // e.g. 'eyJhbGciOi...'
-  edgeFunctionUrl: ''  // e.g. 'https://YOUR_PROJECT_REF.functions.supabase.co/redeem-access-code'
+  url: 'https://sefhzmllopzmdiwfedgz.supabase.co',
+  anonKey: 'sb_publishable_B122Zf2H1prNv7TU0-Y2ew_2QSDEm12',
+  edgeFunctionUrl: 'https://sefhzmllopzmdiwfedgz.supabase.co/functions/v1/account'
 };
