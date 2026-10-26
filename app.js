@@ -1077,7 +1077,10 @@ function init() {
     } else if (state.session.activeUserId && state.users[state.session.activeUserId]) {
       afterLogin();
     } else {
-      renderAccessScreen();
+      const landing = document.getElementById('landing-page');
+      const accessScreen = document.getElementById('access-screen');
+      if (landing) landing.classList.remove('hidden');
+      if (accessScreen) accessScreen.classList.add('hidden');
     }
     hideSplash();
   };
@@ -1088,6 +1091,8 @@ function init() {
 }
 
 function afterLogin() {
+  const landing = document.getElementById('landing-page');
+  if (landing) landing.classList.add('hidden');
   const u = getUser();
   if (!u) { renderAccessScreen(); return; }
   u.lastSeen = Date.now();
@@ -1565,6 +1570,8 @@ function generateSystemFromOnboarding() {
    Progress (with Friction + Weekly Review folded in), Profile.
    ========================================================================= */
 function showApp() {
+  const landing = document.getElementById('landing-page');
+  if (landing) landing.classList.add('hidden');
   const u = getUser();
   document.getElementById('access-screen').classList.add('hidden');
   const onboardScreen = document.getElementById('onboarding-screen');
@@ -2615,6 +2622,30 @@ function refreshAvatarDisplays() {
    EVENT LISTENERS
    ========================================================================= */
 function setupEventListeners() {
+  document.querySelectorAll('[data-open-access]').forEach(button => {
+    button.addEventListener('click', () => {
+      const landing = document.getElementById('landing-page');
+      if (landing) landing.classList.add('hidden');
+      renderAccessScreen();
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    });
+  });
+
+  const landingMenu = document.querySelector('.landing-menu-toggle');
+  const landingNav = document.querySelector('.landing-nav');
+  if (landingMenu && landingNav) {
+    landingMenu.addEventListener('click', () => {
+      const open = landingNav.classList.toggle('menu-open');
+      landingMenu.setAttribute('aria-expanded', String(open));
+      landingMenu.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    });
+    landingNav.querySelectorAll('.landing-links a').forEach(link => link.addEventListener('click', () => {
+      landingNav.classList.remove('menu-open');
+      landingMenu.setAttribute('aria-expanded', 'false');
+    }));
+  }
+  const landingYear = document.getElementById('landing-year');
+  if (landingYear) landingYear.textContent = new Date().getFullYear();
   const bind = (id, event, handler) => {
     const el = document.getElementById(id);
     if (el) el.addEventListener(event, handler);
