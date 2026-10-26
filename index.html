@@ -15,6 +15,7 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -29,84 +30,76 @@
     </div>
   </div>
 
-  <!-- Public landing page. The existing app/auth flows remain below. -->
-  <div id="landing-page" class="landing-page">
-    <header class="landing-nav">
-      <a class="landing-brand" href="#top" aria-label="OnTrack home">
-        <span class="landing-brand-mark" aria-hidden="true"><svg viewBox="0 0 28 28" fill="none"><path d="M5 15.5 11 21l12-14" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 3.5a10.5 10.5 0 1 0 10.5 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".55"/></svg></span>
-        <span>ontrack<span class="brand-period">.</span></span>
-      </a>
-      <nav class="landing-links" aria-label="Main navigation">
-        <a href="#approach">The approach</a>
-        <a href="#principles">Why OnTrack</a>
-      </nav>
-      <div class="landing-nav-actions">
-        <button class="landing-signin" type="button" data-open-access>Sign in</button>
-        <button class="landing-nav-cta" type="button" data-open-access>Get started <span aria-hidden="true">↗</span></button>
+
+  <!-- Marketing landing page. Shown on boot only when there is no signed-in
+       session; every CTA hands off to the existing access/sign-in screen. -->
+  <div id="landing-screen" class="hidden">
+    <header class="lp-nav">
+      <div class="lp-wrap lp-nav-inner">
+        <a class="lp-logo" href="#lp-home"><svg class="lp-logo-mark" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="square" aria-hidden="true"><path d="M5 23 21 7M10 5h13v13"/></svg><span>OnTrack</span></a>
+        <nav class="lp-links" aria-label="Primary">
+          <a href="#lp-home" class="active">Home</a><a href="#lp-features">Features</a><a href="#lp-about">About</a><a href="#lp-faq">FAQ</a>
+        </nav>
+        <div class="lp-nav-cta">
+          <button type="button" class="lp-signin" data-lp-enter>Sign In</button>
+          <button type="button" class="lp-btn lp-btn-primary lp-btn-sm" data-lp-enter>Get Started <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        </div>
       </div>
-      <button class="landing-menu-toggle" type="button" aria-label="Open menu" aria-expanded="false"><span></span><span></span></button>
     </header>
-
-    <main id="top" class="landing-main">
-      <section class="landing-hero">
-        <div class="hero-copy">
-          <div class="hero-kicker"><span class="status-dot"></span> A little better, every day</div>
-          <h1>Build a life<br>that <span class="hero-highlight">moves forward.</span></h1>
-          <p class="hero-description">You don't need a perfect plan. You need a way to keep showing up. OnTrack helps you turn good intentions into progress you can actually feel.</p>
-          <div class="hero-actions">
-            <button class="button-primary" type="button" data-open-access>Start moving forward <span aria-hidden="true">↗</span></button>
-            <a class="button-quiet" href="#approach">See how it works <span aria-hidden="true">↓</span></a>
-          </div>
-          <div class="hero-footnote"><span class="mini-check">✓</span> Your pace. Your goals. Your progress.</div>
+    <section class="lp-hero" id="lp-home">
+      <div class="lp-hero-art" role="img" aria-label="A runner climbing concrete stairs toward a glowing horizon"></div>
+      <div class="lp-wrap lp-hero-copy">
+        <p class="lp-eyebrow">Your growth. Your system.</p>
+        <h1>Build a life that <em>moves forward.</em></h1>
+        <p class="lp-lede">OnTrack is your personal productivity and growth companion. Plan your day, build better habits, track your progress, and become the best version of yourself.</p>
+        <div class="lp-actions">
+          <button type="button" class="lp-btn lp-btn-primary" data-lp-enter>Get Started <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+          <a class="lp-btn lp-btn-ghost" href="#lp-features">Learn More</a>
         </div>
-        <div class="hero-art" aria-label="Abstract illustration of steady progress" role="img">
-          <div class="art-topline"><span>THE LONG GAME</span><span>01 / 03</span></div>
-          <div class="orbit orbit-outer"></div><div class="orbit orbit-middle"></div><div class="orbit orbit-inner"></div>
-          <div class="art-crosshair art-crosshair-x"></div><div class="art-crosshair art-crosshair-y"></div>
-          <div class="art-core"><svg viewBox="0 0 96 96" fill="none" aria-hidden="true"><path d="M19 49.5 38 67l39-43" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="48" cy="48" r="43" stroke="currentColor" stroke-opacity=".18" stroke-width="1.5"/></svg></div>
-          <div class="art-node node-one"><span class="node-dot"></span><span>Show up</span></div>
-          <div class="art-node node-two"><span class="node-dot"></span><span>Keep going</span></div>
-          <div class="art-node node-three"><span class="node-dot"></span><span>Look back</span></div>
-          <div class="art-bottomline"><span>PROGRESS IS A PRACTICE</span><span class="art-spark">✳</span></div>
-        </div>
-        <div class="hero-index"><span>01</span><span class="index-line"></span><span>START WHERE YOU ARE</span></div>
-      </section>
+      </div>
+    </section>
 
-      <section class="landing-marquee" aria-label="OnTrack principles"><div class="marquee-track"><span>MAKE SPACE FOR GROWTH</span><i>✳</i><span>SHOW UP AGAIN</span><i>✳</i><span>PROGRESS OVER PERFECTION</span><i>✳</i><span>MAKE SPACE FOR GROWTH</span><i>✳</i><span>SHOW UP AGAIN</span><i>✳</i></div></section>
-
-      <section id="approach" class="landing-section approach-section">
-        <div class="section-overline"><span>THE APPROACH</span><span>02 — 03</span></div>
-        <div class="approach-layout">
-          <h2>Less pressure<br>to be perfect.<br><span>More proof you're growing.</span></h2>
-          <div class="approach-copy"><p>Change rarely comes from one big breakthrough. It comes from the small things you do, the patterns you notice, and the decision to try again.</p><p>OnTrack gives those small things a place to add up.</p><a class="text-link" href="#principles">A better way to move <span aria-hidden="true">↗</span></a></div>
+    <section class="lp-features" id="lp-features">
+      <div class="lp-wrap">
+        <div class="lp-feat-head">
+          <div><p class="lp-eyebrow">Everything you need</p><h2>Simple tools.<br><em>Lasting change.</em></h2></div>
+          <p>OnTrack brings your goals, habits, and progress together in one place. No more scattered apps, no more lost motivation. Just a clear path forward.</p>
         </div>
-        <div class="approach-visual" aria-hidden="true">
-          <div class="approach-visual-label">A SIMPLE IDEA, REPEATED</div>
-          <div class="step-sequence"><div class="sequence-step"><span class="step-number">01</span><span class="step-symbol symbol-circle"></span><span class="step-label">Choose what matters</span></div><div class="sequence-connector"></div><div class="sequence-step"><span class="step-number">02</span><span class="step-symbol symbol-line"></span><span class="step-label">Show up for it</span></div><div class="sequence-connector"></div><div class="sequence-step"><span class="step-number">03</span><span class="step-symbol symbol-check">✓</span><span class="step-label">Notice the progress</span></div></div>
-        </div>
-      </section>
+        <ul class="lp-grid">
+          <li><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="19" cy="21" r="14"/><circle cx="19" cy="21" r="8"/><circle cx="19" cy="21" r="2.5"/><path d="M19 21 33 7M27 6l6 1 1 6"/></svg><h3>Plan Your Day</h3><p>Turn your goals into actionable tasks and stay focused on what really matters.</p></li>
+          <li><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 34c0-8 4-14 12-16"/><path d="M20 18c-7-1-11-5-11-11 8 0 12 4 11 11Z"/><path d="M20 26c0-7 4-11 11-11 0 7-4 11-11 11Z"/></svg><h3>Build Better Habits</h3><p>Small, consistent actions create big results. Track your habits and stay on course.</p></li>
+          <li><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="26" width="6" height="9" rx="2"/><rect x="17" y="16" width="6" height="19" rx="2"/><rect x="29" y="5" width="6" height="30" rx="2"/></svg><h3>Track Your Progress</h3><p>See how far you've come, spot patterns, and make smarter decisions.</p></li>
+          <li><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7c-3-3-9-2-10 3-4 1-5 6-2 9-2 4 1 9 5 9 2 3 6 3 7 0 1 3 5 3 7 0 4 0 7-5 5-9 3-3 2-8-2-9-1-5-7-6-10-3Z"/><path d="M20 7v26M13 16c3 0 5 2 7 4M27 16c-3 0-5 2-7 4M13 26c3 0 5-2 7-3M27 26c-3 0-5-2-7-3"/></svg><h3>Grow Continuously</h3><p>Learn, improve, and unlock your full potential — one step at a time.</p></li>
+        </ul>
+      </div>
+    </section>
 
-      <section id="principles" class="landing-section principles-section">
-        <div class="section-overline"><span>WHY ONTRACK</span><span>03 — 03</span></div>
-        <div class="principles-heading"><h2>Make progress<br><span>feel possible.</span></h2><p>A little structure can change how you spend your days — and how you feel about where they're taking you.</p></div>
-        <div class="principle-grid">
-          <article class="principle-card"><div class="principle-number">01 <span>—</span> FOCUS</div><div class="principle-icon icon-focus"><span></span></div><h3>Know what matters.</h3><p>Give your attention somewhere meaningful to go. Start with what matters now, not everything at once.</p><span class="card-arrow" aria-hidden="true">↗</span></article>
-          <article class="principle-card"><div class="principle-number">02 <span>—</span> CONSISTENCY</div><div class="principle-icon icon-consistency"><span></span><span></span><span></span></div><h3>Keep showing up.</h3><p>Build routines that fit real life. Progress isn't about never missing; it's about finding your way back.</p><span class="card-arrow" aria-hidden="true">↗</span></article>
-          <article class="principle-card"><div class="principle-number">03 <span>—</span> REFLECTION</div><div class="principle-icon icon-reflection"><span></span></div><h3>See how far you've come.</h3><p>Look back at the effort you've made, learn from the hard days, and use what you learn to move forward.</p><span class="card-arrow" aria-hidden="true">↗</span></article>
+    <section class="lp-mindset" id="lp-about">
+      <div class="lp-mindset-art" role="img" aria-label="A winding glowing path leading up a dark mountain"></div>
+      <div class="lp-wrap">
+        <div class="lp-mindset-copy">
+          <p class="lp-eyebrow">The OnTrack mindset</p>
+          <h2>Progress isn't about <em>perfection.</em></h2>
+          <p>It's about consistency. OnTrack helps you stay focused, build momentum, and keep showing up for the life you want — every day.</p>
+          <button type="button" class="lp-textlink" data-lp-enter>Learn More <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section class="landing-cta-section">
-        <div class="cta-orbit cta-orbit-one"></div><div class="cta-orbit cta-orbit-two"></div>
-        <div class="cta-content"><span class="cta-eyebrow"><span class="status-dot"></span> YOUR NEXT CHAPTER STARTS SMALL</span><h2>You don't have to<br>change everything.<br><span>Just start.</span></h2><p>Meet yourself where you are. Then take the next step.</p><button class="button-primary cta-button" type="button" data-open-access>Get on track <span aria-hidden="true">↗</span></button></div>
-        <div class="cta-stamp">ONE DAY<br>AT A TIME<span>✳</span></div>
-      </section>
-    </main>
-    <footer class="landing-footer"><a class="landing-brand footer-brand" href="#top"><span class="landing-brand-mark" aria-hidden="true"><svg viewBox="0 0 28 28" fill="none"><path d="M5 15.5 11 21l12-14" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 3.5a10.5 10.5 0 1 0 10.5 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".55"/></svg></span><span>ontrack<span class="brand-period">.</span></span></a><span class="footer-note">A little better, every day.</span><a class="footer-top" href="#top">Back to top ↑</a><span class="footer-copyright">© <span id="landing-year"></span> OnTrack</span></footer>
+    <section class="lp-faq" id="lp-faq">
+      <div class="lp-wrap">
+        <h2>Questions</h2>
+        <details><summary>Is OnTrack free to start?</summary><p>Yes. Create a profile and you get an access code you can use to sign back in.</p></details>
+        <details><summary>Will it work on my phone?</summary><p>OnTrack is installable on phones and works offline after your first visit.</p></details>
+        <details><summary>Where is my data kept?</summary><p>On your device, and synced to your connected account when cloud sync is set up.</p></details>
+        <div class="lp-actions"><button type="button" class="lp-btn lp-btn-primary" data-lp-enter>Get Started <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+      </div>
+    </section>
   </div>
 
   <!-- Access / Sign in -->
-  <div id="access-screen" class="auth-overlay hidden">
+  <div id="access-screen" class="auth-overlay">
+    <button type="button" id="access-back-home" class="access-back-home">Back to home</button>
     <div class="auth-card" id="access-card">
       <!-- rendered by app.js -->
     </div>

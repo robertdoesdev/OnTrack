@@ -5,7 +5,7 @@
    needs a push subscription + a server to send from, which isn't wired
    up here. See SETUP.md for what real push delivery would require. */
 
-const CACHE_NAME = 'ontrack-shell-v1';
+const CACHE_NAME = 'ontrack-shell-v2';
 const SHELL_FILES = [
   './',
   './index.html',
@@ -14,7 +14,10 @@ const SHELL_FILES = [
   './supabase-config.js',
   './manifest.json',
   './icons/icon-192.png',
-  './icons/icon-512.png'
+  './icons/icon-512.png',
+  './assets/hero-runner.jpg',
+  './assets/mindset-mountain.jpg',
+  './assets/avatars.png'
 ];
 
 self.addEventListener('install', (event) => {
